@@ -178,8 +178,9 @@ function _init_xcasroot(wrapper_lib_path::String)
 
     # Also check GIAC_jll if available
     try
-        @eval using GIAC_jll
-        jll_share = joinpath(GIAC_jll.artifact_dir, "share", "giac")
+        mod = Base.require(Base.PkgId(Base.UUID("cf749d6c-42f5-550d-8800-4812740c2942"), "GIAC_jll"))
+        jll_aide_cas = mod.aide_cas_path
+        jll_share = dirname(jll_aide_cas)
         pushfirst!(search_paths, jll_share)
     catch
         # GIAC_jll not available, continue with other paths
@@ -272,6 +273,7 @@ const _EXPR_TYPE_MATRIX = 6
 
 # Stub pointer tracking (for development/testing)
 const _stub_expressions = Dict{UInt, String}()
+const _gen_objects = Dict{UInt, Any}()  # CxxWrap Gen objects keyed by stub ID
 const _stub_counter = Ref{UInt}(0)
 
 # Shared CxxWrap context for evaluation (lazily initialized)
@@ -286,21 +288,43 @@ end
 
 function _make_stub_ptr(expr::String)::Ptr{Cvoid}
     _stub_counter[] += 1
-    ptr = Ptr{Cvoid}(_stub_counter[])
-    _stub_expressions[_stub_counter[]] = expr
-    return ptr
+    id = _stub_counter[]
+    _stub_expressions[id] = expr
+    return Ptr{Cvoid}(id)
+end
+
+# Store a CxxWrap Gen object and return a handle pointer (no string conversion)
+function _make_gen_ptr(gen)::Ptr{Cvoid}
+    _stub_counter[] += 1
+    id = _stub_counter[]
+    _gen_objects[id] = gen
+    return Ptr{Cvoid}(id)
+end
+
+# Retrieve a stored Gen object, or nothing if not found
+function _get_gen(ptr::Ptr{Cvoid})
+    return get(_gen_objects, UInt(ptr), nothing)
 end
 
 function _get_stub_expr(ptr::Ptr{Cvoid})::String
-    return get(_stub_expressions, UInt(ptr), "<unknown>")
+    # First check if we have a cached string
+    s = get(_stub_expressions, UInt(ptr), nothing)
+    s !== nothing && return s
+    # Otherwise convert from stored Gen (lazy string conversion)
+    gen = _get_gen(ptr)
+    if gen !== nothing
+        s = String(GiacCxxBindings.to_string(gen))
+        _stub_expressions[UInt(ptr)] = s  # cache for next time
+        return s
+    end
+    return "<unknown>"
 end
 
 function _giac_eval_string(expr::String, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
     if !_stub_mode[] && GiacCxxBindings._have_library
-        # Use CxxWrap bindings for real evaluation - get Gen directly
+        # Use CxxWrap bindings for real evaluation - store Gen directly
         gen = GiacCxxBindings.giac_eval(expr)
-        # Allocate heap copy and return real pointer (string-free!)
-        return Ptr{Cvoid}(GiacCxxBindings.gen_to_heap_ptr(gen))
+        return _make_gen_ptr(gen)
     end
     # Stub mode: just store the expression as-is
     return _make_stub_ptr(expr)
@@ -309,25 +333,14 @@ end
 """
     _gen_to_ptr(gen) -> Ptr{Cvoid}
 
-Convert a CxxWrap Gen to a heap pointer for GiacExpr.
-This is a string-free conversion path used by to_giac in Symbolics extension.
+Convert a CxxWrap Gen to a pointer for GiacExpr.
+Used by to_giac in Symbolics extension.
 """
 function _gen_to_ptr(gen)::Ptr{Cvoid}
-    if !_stub_mode[] && GiacCxxBindings._have_library
-        return Ptr{Cvoid}(GiacCxxBindings.gen_to_heap_ptr(gen))
-    end
-    # Stub mode fallback: convert to string
-    return _make_stub_ptr(String(GiacCxxBindings.to_string(gen)))
+    return _make_gen_ptr(gen)
 end
 
 function _giac_expr_to_string(ptr::Ptr{Cvoid})::String
-    if _stub_mode[]
-        return _get_stub_expr(ptr)
-    end
-    # Non-stub mode: ptr is a real giac::gen* on the heap
-    if GiacCxxBindings._have_library
-        return String(GiacCxxBindings.gen_ptr_to_string(ptr))
-    end
     return _get_stub_expr(ptr)
 end
 
@@ -335,12 +348,9 @@ function _giac_free_expr(ptr::Ptr{Cvoid})
     if ptr == C_NULL
         return
     end
-    if _stub_mode[]
-        delete!(_stub_expressions, UInt(ptr))
-    elseif GiacCxxBindings._have_library
-        # Non-stub mode: free the real heap-allocated giac::gen
-        GiacCxxBindings.free_gen_ptr(ptr)
-    end
+    id = UInt(ptr)
+    delete!(_stub_expressions, id)
+    delete!(_gen_objects, id)
     nothing
 end
 
@@ -974,13 +984,16 @@ end
 # These use the direct C++ Tier 1 functions (no name lookup overhead)
 # ============================================================================
 
-# Helper: convert string expression to Gen, apply function, return result string
+# Helper: retrieve stored Gen (or eval from string), apply function, store result Gen
 function _tier1_unary(func::Function, expr_ptr::Ptr{Cvoid})::Ptr{Cvoid}
     if !_stub_mode[] && GiacCxxBindings._have_library
         try
-            gen_arg = GiacCxxBindings.gen_from_heap_ptr(expr_ptr)
+            gen_arg = _get_gen(expr_ptr)
+            if gen_arg === nothing
+                gen_arg = GiacCxxBindings.giac_eval(_get_stub_expr(expr_ptr))
+            end
             result_gen = func(gen_arg)
-            return Ptr{Cvoid}(GiacCxxBindings.gen_to_heap_ptr(result_gen))
+            return _make_gen_ptr(result_gen)
         catch e
             @debug "Tier 1 function failed: $e"
         end
@@ -991,10 +1004,16 @@ end
 function _tier1_binary(func::Function, a_ptr::Ptr{Cvoid}, b_ptr::Ptr{Cvoid})::Ptr{Cvoid}
     if !_stub_mode[] && GiacCxxBindings._have_library
         try
-            a_gen = GiacCxxBindings.gen_from_heap_ptr(a_ptr)
-            b_gen = GiacCxxBindings.gen_from_heap_ptr(b_ptr)
+            a_gen = _get_gen(a_ptr)
+            if a_gen === nothing
+                a_gen = GiacCxxBindings.giac_eval(_get_stub_expr(a_ptr))
+            end
+            b_gen = _get_gen(b_ptr)
+            if b_gen === nothing
+                b_gen = GiacCxxBindings.giac_eval(_get_stub_expr(b_ptr))
+            end
             result_gen = func(a_gen, b_gen)
-            return Ptr{Cvoid}(GiacCxxBindings.gen_to_heap_ptr(result_gen))
+            return _make_gen_ptr(result_gen)
         catch e
             @debug "Tier 1 binary function failed: $e"
         end
@@ -1005,11 +1024,20 @@ end
 function _tier1_ternary(func::Function, a_ptr::Ptr{Cvoid}, b_ptr::Ptr{Cvoid}, c_ptr::Ptr{Cvoid})::Ptr{Cvoid}
     if !_stub_mode[] && GiacCxxBindings._have_library
         try
-            a_gen = GiacCxxBindings.gen_from_heap_ptr(a_ptr)
-            b_gen = GiacCxxBindings.gen_from_heap_ptr(b_ptr)
-            c_gen = GiacCxxBindings.gen_from_heap_ptr(c_ptr)
+            a_gen = _get_gen(a_ptr)
+            if a_gen === nothing
+                a_gen = GiacCxxBindings.giac_eval(_get_stub_expr(a_ptr))
+            end
+            b_gen = _get_gen(b_ptr)
+            if b_gen === nothing
+                b_gen = GiacCxxBindings.giac_eval(_get_stub_expr(b_ptr))
+            end
+            c_gen = _get_gen(c_ptr)
+            if c_gen === nothing
+                c_gen = GiacCxxBindings.giac_eval(_get_stub_expr(c_ptr))
+            end
             result_gen = func(a_gen, b_gen, c_gen)
-            return Ptr{Cvoid}(GiacCxxBindings.gen_to_heap_ptr(result_gen))
+            return _make_gen_ptr(result_gen)
         catch e
             @debug "Tier 1 ternary function failed: $e"
         end
