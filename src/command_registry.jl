@@ -1190,10 +1190,17 @@ function search_commands_by_description(query::Union{Symbol, String}; n::Int=DEF
     matches = Tuple{Symbol, Int}[]
 
     # Redirect stderr at file descriptor level to suppress C++ library errors
-    old_stderr = ccall(:dup, Cint, (Cint,), 2)
-    devnull_fd = ccall(:open, Cint, (Cstring, Cint), "/dev/null", 1)  # O_WRONLY = 1
-    ccall(:dup2, Cint, (Cint, Cint), devnull_fd, 2)
-    ccall(:close, Cint, (Cint,), devnull_fd)
+    if Sys.iswindows()
+        old_stderr = ccall(:_dup, Cint, (Cint,), 2)
+        devnull_fd = ccall(:_open, Cint, (Cstring, Cint), "NUL", 1)
+        ccall(:_dup2, Cint, (Cint, Cint), devnull_fd, 2)
+        ccall(:_close, Cint, (Cint,), devnull_fd)
+    else
+        old_stderr = ccall(:dup, Cint, (Cint,), 2)
+        devnull_fd = ccall(:open, Cint, (Cstring, Cint), "/dev/null", 1)  # O_WRONLY = 1
+        ccall(:dup2, Cint, (Cint, Cint), devnull_fd, 2)
+        ccall(:close, Cint, (Cint,), devnull_fd)
+    end
 
     try
         for cmd in VALID_COMMANDS
@@ -1229,8 +1236,13 @@ function search_commands_by_description(query::Union{Symbol, String}; n::Int=DEF
         end
     finally
         # Restore stderr
-        ccall(:dup2, Cint, (Cint, Cint), old_stderr, 2)
-        ccall(:close, Cint, (Cint,), old_stderr)
+        if Sys.iswindows()
+            ccall(:_dup2, Cint, (Cint, Cint), old_stderr, 2)
+            ccall(:_close, Cint, (Cint,), old_stderr)
+        else
+            ccall(:dup2, Cint, (Cint, Cint), old_stderr, 2)
+            ccall(:close, Cint, (Cint,), old_stderr)
+        end
     end
 
     # Sort by (score DESC, command ASC)
