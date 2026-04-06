@@ -5,94 +5,152 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - Unreleased
+## [0.11.0] - 2026-04-06
 
 ### Added
 
-- **Symbolic Constants module (`Giac.Constants`)**: New submodule providing symbolic
-  mathematical constants `pi`, `e`, and `i` as `GiacExpr` values that preserve their
-  symbolic form in expressions:
-  ```julia
-  using Giac
-  using Giac.Constants: pi, e, i
+- **JLL-based library loading**: `GIAC_jll` and `libgiac_julia_jll` are now direct
+  dependencies, providing the GIAC library and C++ wrapper automatically. No manual
+  compilation or environment variables needed.
+- **Windows support**: Fixed POSIX `dup`/`dup2` calls in `search_commands_by_description`
+  to use Windows-compatible `_dup`/`_dup2`.
+- **Symbolics 7 compatibility**: `to_symbolics` now returns consistent `Num` type using
+  `Symbolics.wrap()` and pairwise `Symbolics.term()` for multiplication, preserving
+  symbolic forms like `sqrt(2)`.
 
-  x = giac_eval("x")
-  expr = 2 * pi * x           # GiacExpr: 2*pi*x (stays symbolic!)
-  invoke_cmd(:exp, i * pi)    # GiacExpr: -1 (Euler's formula)
-  ```
+### Removed
 
-  Unlike Julia's `Base.pi` which converts to float when used with GiacExpr, these
-  symbolic constants maintain exact representation throughout computations. Constants
-  require explicit import to avoid shadowing Julia's native constants.
-
-- **Multiple dispatch for JULIA_CONFLICTS commands**: GIAC commands that conflict with Julia
-  (like `zeros`, `min`, `max`, `det`, `inv`) now work with `GiacExpr` arguments via multiple dispatch.
-  Julia's type-based dispatch routes calls correctly:
-  - `zeros(giac_expr)` → finds polynomial roots via GIAC
-  - `zeros(3, 3)` → creates Julia Matrix of zeros (unchanged)
-
-  This enables natural Julia syntax for ~150+ additional GIAC commands without breaking
-  existing Base/LinearAlgebra functionality.
-
-- Helper functions `_extendable_conflicts()` and `_has_giac_method()` in `Giac.Commands`
-  for conflict resolution logic
-
-- **Equation syntax with `~` operator**: Create symbolic equations using the tilde operator,
-  following Julia's Symbolics.jl convention:
-  ```julia
-  @giac_var x
-  eq = x^2 - 1 ~ 0    # Creates equation: x^2-1=0
-  solve(eq, x)        # Solves for roots: [-1, 1]
-  ```
-
-  This provides a natural syntax alternative to `giac_eval("x^2-1=0")`. The `~` operator
-  works with mixed types (`GiacExpr ~ Number` and `Number ~ GiacExpr`).
+- **BREAKING**: Removed `is_stub_mode()` from public API. Stub mode no longer exists —
+  the library is always available via JLL packages.
+- **BREAKING**: Removed `TempApi` submodule. Use `Giac.Commands` instead for the same
+  functions (`diff`, `integrate`, `factor`, etc.).
+- Removed all stub mode infrastructure (`_stub_mode` flag, stub expressions, conditional
+  branches in ~30 functions).
 
 ### Changed
 
-- **Suppressed misleading conflict warnings**: The "GIAC command 'X' conflicts with Julia"
-  warning is now suppressed for non-keyword conflicts since they work correctly via
-  multiple dispatch. Only true keyword conflicts (`:if`, `:for`, etc.) trigger warnings.
+- **BREAKING**: Minimum Julia version raised from 1.10 to 1.11.
+- Library initialization now throws `GiacError` instead of silently falling back to
+  stub mode when the wrapper library is not found.
+
+## [0.10.0] - 2026-04-05
+
+### Added
+
+- **HeldCmd LaTeX rendering**: Specialized LaTeX renderers for `limit`, `sum`, `product`,
+  and `sum_riemann` held commands.
+- **HeldEquation tilde operator**: `~` operator support for `HeldCmd` with LaTeX rendering.
+- **GiacMatrix command support**: GIAC commands now work with `GiacMatrix` arguments.
+- `Base.numerator` and `Base.denominator` methods for `GiacExpr`.
+
+## [0.9.0] - 2026-03-20
+
+### Added
+
+- **Symbolic Constants module (`Giac.Constants`)**: Submodule providing symbolic
+  mathematical constants `pi`, `e`, and `i` as `GiacExpr` values:
+  ```julia
+  using Giac.Constants: pi, e, i
+  expr = 2 * pi * x  # stays symbolic
+  ```
+
+- **MathJSON.jl extension**: Bidirectional conversion between `GiacExpr` and MathJSON
+  expression trees via `to_mathjson` and `to_giac`.
+
+- **Direct pointer conversion**: `to_symbolics` and `to_giac` use direct Gen pointer
+  transfer instead of string serialization for better performance.
+
+- **Direct GMP binary transfer**: `BigInt` conversion uses direct memory transfer from
+  GIAC's GMP integers, avoiding string parsing.
+
+### Changed
+
+- `GiacSymbolicsExt` uses `GenTypes` enum instead of magic numbers.
+- Factorized expressions preserved in `to_symbolics` conversion.
+
+## [0.8.0] - 2026-03-15
+
+### Added
+
+- **GenTypes module**: `T` enum for GIAC expression types with C++ alignment.
+- **Pluto example notebooks**: Basics and advanced usage notebooks with screenshots.
+
+### Changed
+
+- Tier 2 N-ary dispatch for functions with >3 parameters.
+
+## [0.7.0] - 2026-03-10
+
+### Added
+
+- **UnitRange indexing**: `GiacMatrix` and `@giac_several_vars` support `UnitRange` indices.
+- **Z-transform functions**: `ztrans` and `invztrans` with documentation.
+- **Laplace transform functions**: `laplace` and `ilaplace` with documentation.
+- **D operator**: Derivative operator for ODE initial conditions.
+- **Callable GiacExpr**: `f(x)` syntax for function evaluation.
+- **Extended `@giac_var` macro**: Function syntax support.
+
+## [0.6.0] - 2026-03-05
+
+### Added
+
+- **Domain documentation**: Mathematics (algebra, calculus, linear algebra, ODEs,
+  trigonometry) and physics (mechanics, electromagnetism) with test-verified examples.
+- **Vector input support**: GIAC commands accept Julia vectors as arguments.
+- **Boolean conversion**: `to_julia` handles GIAC boolean results.
+
+### Fixed
+
+- `to_julia` for `solve` results using CxxWrap bindings.
+- Correct `GIAC_STRNG` type constant.
+
+## [0.5.0] - 2026-02-25
+
+### Added
+
+- **Tables.jl compatibility**: `GiacMatrix` and command help implement Tables.jl interface.
+- **Julia help system integration**: `?command` works in the REPL.
+- **Variable substitution**: `substitute` function with Symbolics.jl-compatible interface.
+- **Output handling**: Improved type conversion and introspection.
+
+### Removed
+
+- Public `help()` function (replaced by Julia help system integration).
+
+## [0.4.0] - 2026-02-20
+
+### Added
+
+- **Multiple dispatch for JULIA_CONFLICTS commands**: GIAC commands that conflict with
+  Julia (like `zeros`, `min`, `max`, `det`, `inv`) now work with `GiacExpr` arguments
+  via multiple dispatch.
+
+- **Equation syntax with `~` operator**: Create symbolic equations using the tilde operator:
+  ```julia
+  @giac_var x
+  eq = x^2 - 1 ~ 0
+  solve(eq, x)
+  ```
+
+### Changed
+
+- Suppressed misleading conflict warnings for non-keyword conflicts.
 
 ## [0.3.0] - 2026-02-16
 
 ### Removed
 
-- **BREAKING**: Removed `giac_` prefixed functions in favor of `Giac.Commands` equivalents:
-  - `giac_diff` → Use `Giac.Commands.diff` or `invoke_cmd(:diff, ...)`
-  - `giac_expand` → Use `Giac.Commands.expand` or `invoke_cmd(:expand, ...)`
-  - `giac_factor` → Use `Giac.Commands.factor` or `invoke_cmd(:factor, ...)`
-  - `giac_gcd` → Use `Giac.Commands.gcd` or `invoke_cmd(:gcd, ...)`
-  - `giac_integrate` → Use `Giac.Commands.integrate` or `invoke_cmd(:integrate, ...)`
-  - `giac_limit` → Use `Giac.Commands.limit` or `invoke_cmd(:limit, ...)`
-  - `giac_series` → Use `Giac.Commands.series` or `invoke_cmd(:series, ...)`
-  - `giac_simplify` → Use `Giac.Commands.simplify` or `invoke_cmd(:simplify, ...)`
-  - `giac_solve` → Use `Giac.Commands.solve` or `invoke_cmd(:solve, ...)`
-
-  **Migration**: Replace `giac_factor(expr)` with either:
-  ```julia
-  # Option 1: Import from Giac.Commands
-  using Giac.Commands: factor
-  factor(expr)
-
-  # Option 2: Use invoke_cmd (always available)
-  invoke_cmd(:factor, expr)
-  ```
-
-  **Retained**: `giac_eval` and `help` remain available as core functions.
+- **BREAKING**: Removed `giac_` prefixed functions in favor of `Giac.Commands` equivalents.
 
 ### Changed
 
-- `Giac.TempApi` now delegates to `invoke_cmd` instead of removed `giac_*` functions
+- `Giac.TempApi` delegated to `invoke_cmd` instead of removed `giac_*` functions.
 
 ## [0.2.0] - 2026-02-16
 
 ### Changed
 
-- **BREAKING**: Renamed `@giac_several_var` to `@giac_several_vars` (plural form)
-  - The macro creates multiple variables, so the name should use plural "vars"
-  - **Migration**: Find and replace `@giac_several_var` with `@giac_several_vars` in your code
-  - Example: `@giac_several_var a 3` becomes `@giac_several_vars a 3`
+- **BREAKING**: Renamed `@giac_several_var` to `@giac_several_vars` (plural form).
 
 ## [0.1.0] - Initial Release
 
