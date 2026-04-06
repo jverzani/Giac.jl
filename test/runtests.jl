@@ -127,6 +127,12 @@ using LinearAlgebra
     include("test_held_cmd.jl")
 
     # ============================================================================
+    # Additional Coverage Tests
+    # Targets uncovered code paths in iteration, introspection, held_cmd, types
+    # ============================================================================
+    include("test_coverage.jl")
+
+    # ============================================================================
     # MathJSON Conversion Extension Tests (054-mathjson-conversion)
     # Verifies bidirectional conversion between GiacExpr and MathJSON types
     # ============================================================================
