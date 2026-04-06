@@ -388,7 +388,8 @@ function Giac.to_symbolics(expr::GiacExpr)
     # Feature 052: Direct pointer conversion without string serialization
     # Use _ptr_to_gen to get Gen directly from the GiacExpr pointer
     gen = Giac._ptr_to_gen(expr)
-    return _gen_tree_to_symbolics(gen, var_cache)
+    result = _gen_tree_to_symbolics(gen, var_cache)
+    return result
 end
 
 # Export conversion functions
