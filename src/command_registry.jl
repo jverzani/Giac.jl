@@ -1112,7 +1112,10 @@ function _score_help_match(query::AbstractString, help_result::HelpResult)::Int
         end
     catch e
         # Help text from C++ may contain invalid UTF-8 bytes
-        e isa Base.InvalidCharError && return 0
+        if e isa Base.InvalidCharError
+            @warn "Invalid UTF-8 in help text for command '$(help_result.name)': $(e)"
+            return 0
+        end
         rethrow()
     end
 
