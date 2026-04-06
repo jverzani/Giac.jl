@@ -90,8 +90,6 @@ include("held_cmd.jl")
 # Include Commands submodule (009-commands-submodule)
 include("Commands.jl")
 
-# Include TempApi submodule (010-tempapi-submodule)
-include("TempApi.jl")
 
 # Include Constants submodule (053-symbolic-pi-constant)
 include("Constants.jl")

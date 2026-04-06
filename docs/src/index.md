@@ -22,7 +22,6 @@ A Julia wrapper for the [GIAC](https://www-fourier.ujf-grenoble.fr/~parisse/giac
 - **Symbolics.jl Integration**: Bidirectional conversion with Symbolics.jl
 - **Tables.jl Compatibility**: Convert GiacMatrix and command help to DataFrames, CSV export
 - **LaTeX Support**: Automatic LaTeX rendering in Pluto notebooks
-- **TempApi Submodule**: Simplified function names (`diff`, `factor`, etc.) via `Giac.TempApi`
 
 ## Installation
 
@@ -159,7 +158,6 @@ integrate(exp(x), x, -Inf, 0)    # 1
 - **[Core API](@ref)**: Types, evaluation, and main functions
 - **[Commands](@ref Giac.Commands)**: All GIAC commands as functions
 - **[Constants](@ref Giac.Constants)**: Symbolic mathematical constants (pi, e, i)
-- **[TempApi](@ref Giac.TempApi)**: Convenience functions with simple names
 
 ## Documentation
 
@@ -183,7 +181,6 @@ integrate(exp(x), x, -Inf, 0)    # 1
 ### API Reference
 - [Core API](api/core.md) - Types, evaluation, and main functions
 - [Commands Submodule](api/commands_submodule.md) - All GIAC commands as functions
-- [TempApi](api/tempapi.md) - Convenience functions with simple names
 
 ## Related Projects
 

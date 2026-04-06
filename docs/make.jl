@@ -3,14 +3,13 @@ using DocumenterMermaid
 using Giac
 # Note: Giac.Commands is not imported here because it has ~2000 auto-generated
 # command functions. Their usage is documented in commands_submodule.md.
-using Giac.TempApi
 
 makedocs(
     sitename = "Giac.jl",
     # Note: Giac.Commands is excluded from modules because it has ~2000 auto-generated
     # command functions that aren't individually documented (usage is documented in
     # commands_submodule.md instead)
-    modules = [Giac, Giac.TempApi],
+    modules = [Giac],
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://s-celles.github.io/Giac.jl",
@@ -44,7 +43,6 @@ makedocs(
             "Core API" => "api/core.md",
             "GIAC Commands" => "api/giac_commands.md",
             "Commands submodule" => "api/commands_submodule.md",
-            "TempApi" => "api/tempapi.md",
         ],
         "Held Commands" => "held_commands.md",
         "Tables.jl Compatibility" => "tables.md",

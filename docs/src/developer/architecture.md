@@ -48,7 +48,6 @@ graph TB
 | `operators.jl` | Arithmetic operators | `+`, `-`, `*`, `/`, `^` for GiacExpr | types.jl |
 | `macros.jl` | User convenience macros | `@giac_var`, `@giac_several_vars` | api.jl |
 | `utils.jl` | Helper utilities | Internal utilities | None |
-| `TempApi.jl` | Temporary API submodule | TempApi functions | api.jl |
 
 ## Module Initialization
 
@@ -206,7 +205,6 @@ graph TD
     E --> G[Commands.jl]
     H[command_registry.jl] --> E
     H --> I[namespace_commands.jl]
-    D --> J[TempApi.jl]
 
     K[Giac.jl] --> A
     K --> B
@@ -217,7 +215,6 @@ graph TD
     K --> G
     K --> H
     K --> I
-    K --> J
 ```
 
 ## Where to Make Changes

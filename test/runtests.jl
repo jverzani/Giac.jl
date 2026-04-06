@@ -31,8 +31,6 @@ using LinearAlgebra
     # Commands submodule tests (009-commands-submodule)
     include("test_commands_submodule.jl")
 
-    # TempApi submodule tests (010-tempapi-submodule)
-    include("test_tempapi.jl")
 
     # Macro tests (011-giac-symbol-macro)
     include("test_macros.jl")
