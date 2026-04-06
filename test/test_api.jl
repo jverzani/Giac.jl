@@ -23,44 +23,27 @@
         # T025-T028: Calculus API functions available via Commands submodule
         # invoke_cmd is always available
         @test :invoke_cmd in names(Giac.Commands)
-        # In stub mode, VALID_COMMANDS is empty so command-specific functions aren't generated
-        # Note: diff is in Base, so it's extended via multiple dispatch rather than exported
-        # Other calculus functions are exported from Giac.Commands
-        if is_stub_mode()
-            @test_broken :integrate in names(Giac.Commands)
-            @test_broken :limit in names(Giac.Commands)
-            @test_broken :series in names(Giac.Commands)
-        else
-            @test :integrate in names(Giac.Commands)
-            @test :limit in names(Giac.Commands)
-            @test :series in names(Giac.Commands)
-        end
+        @test :integrate in names(Giac.Commands)
+        @test :limit in names(Giac.Commands)
+        @test :series in names(Giac.Commands)
         # diff extends Base.diff via multiple dispatch - verify method exists
         @test isdefined(Base, :diff)
     end
 
     @testset "Algebra Functions via Giac.Commands" begin
         # T029-T033: Algebra API functions available via Commands submodule
-        # In stub mode, VALID_COMMANDS is empty so command-specific functions aren't generated
         # Note: gcd is in JULIA_CONFLICTS (conflicts with Base.gcd) so it's not exported
         # Use invoke_cmd(:gcd, ...) instead
-        if is_stub_mode()
-            @test_broken :factor in names(Giac.Commands)
-            @test_broken :expand in names(Giac.Commands)
-            @test_broken :simplify in names(Giac.Commands)
-            @test_broken :solve in names(Giac.Commands)
-        else
-            @test :factor in names(Giac.Commands)
-            @test :expand in names(Giac.Commands)
-            @test :simplify in names(Giac.Commands)
-            @test :solve in names(Giac.Commands)
-        end
+        @test :factor in names(Giac.Commands)
+        @test :expand in names(Giac.Commands)
+        @test :simplify in names(Giac.Commands)
+        @test :solve in names(Giac.Commands)
         # gcd conflicts with Base.gcd - use invoke_cmd instead
         @test :gcd in Giac.JULIA_CONFLICTS
     end
 
     @testset "GiacMatrix Symbol Constructor" begin
-        # Note: Element access tests use @test_broken in stub mode because
+        # Note: Element access tests use @test_broken because
         # _giac_matrix_getindex returns C_NULL when the real library isn't loaded.
         # The constructor correctly creates elements, but retrieval requires
         # the full GIAC library.
@@ -80,16 +63,9 @@
             @testset "element access" begin
                 M = GiacMatrix(:m, 2, 3)
                 # Element names should be m11, m12, m13, m21, m22, m23
-                # In stub mode, element access returns null pointers
-                if is_stub_mode()
-                    @test_broken string(M[1, 1]) == "m11"
-                    @test_broken string(M[1, 2]) == "m12"
-                    @test_broken string(M[2, 3]) == "m23"
-                else
-                    @test string(M[1, 1]) == "m11"
-                    @test string(M[1, 2]) == "m12"
-                    @test string(M[2, 3]) == "m23"
-                end
+                @test string(M[1, 1]) == "m11"
+                @test string(M[1, 2]) == "m12"
+                @test string(M[2, 3]) == "m23"
             end
 
             # T005: Matrix dimensions
@@ -105,16 +81,8 @@
                 A = GiacMatrix(:a, 2, 2)
                 @test size(A) == (2, 2)
                 # det should return a GiacExpr (symbolic determinant)
-                # In stub mode, det computation fails due to C_NULL pointer
-                if is_stub_mode()
-                    @test_broken begin
-                        d = det(A)
-                        d isa GiacExpr
-                    end
-                else
-                    d = det(A)
-                    @test d isa GiacExpr
-                end
+                d = det(A)
+                @test d isa GiacExpr
             end
         end
 
@@ -137,16 +105,9 @@
             # T011: Vector element naming (v1, v2, v3 not v11, v21, v31)
             @testset "vector element naming" begin
                 V = GiacMatrix(:v, 3)
-                # In stub mode, element access returns null pointers
-                if is_stub_mode()
-                    @test_broken string(V[1, 1]) == "v1"
-                    @test_broken string(V[2, 1]) == "v2"
-                    @test_broken string(V[3, 1]) == "v3"
-                else
-                    @test string(V[1, 1]) == "v1"
-                    @test string(V[2, 1]) == "v2"
-                    @test string(V[3, 1]) == "v3"
-                end
+                @test string(V[1, 1]) == "v1"
+                @test string(V[2, 1]) == "v2"
+                @test string(V[3, 1]) == "v3"
             end
         end
 
@@ -158,26 +119,16 @@
             @testset "Greek letter base name" begin
                 Γ = GiacMatrix(:Γ, 2, 2)
                 @test Γ isa GiacMatrix
-                if is_stub_mode()
-                    @test_broken string(Γ[1, 1]) == "Γ11"
-                    @test_broken string(Γ[2, 2]) == "Γ22"
-                else
-                    @test string(Γ[1, 1]) == "Γ11"
-                    @test string(Γ[2, 2]) == "Γ22"
-                end
+                @test string(Γ[1, 1]) == "Γ11"
+                @test string(Γ[2, 2]) == "Γ22"
             end
 
             # T015: Longer base name
             @testset "longer base name" begin
                 C = GiacMatrix(:coeff, 2, 2)
                 @test C isa GiacMatrix
-                if is_stub_mode()
-                    @test_broken string(C[1, 1]) == "coeff11"
-                    @test_broken string(C[1, 2]) == "coeff12"
-                else
-                    @test string(C[1, 1]) == "coeff11"
-                    @test string(C[1, 2]) == "coeff12"
-                end
+                @test string(C[1, 1]) == "coeff11"
+                @test string(C[1, 2]) == "coeff12"
             end
         end
 
@@ -213,24 +164,15 @@
                 M = GiacMatrix(:m, 10, 10)
                 @test size(M) == (10, 10)
                 # Should use underscore separators since dim > 9
-                if is_stub_mode()
-                    @test_broken string(M[1, 10]) == "m_1_10"
-                    @test_broken string(M[10, 1]) == "m_10_1"
-                else
-                    @test string(M[1, 10]) == "m_1_10"
-                    @test string(M[10, 1]) == "m_10_1"
-                end
+                @test string(M[1, 10]) == "m_1_10"
+                @test string(M[10, 1]) == "m_10_1"
             end
 
             # T022: Single element matrix
             @testset "single element matrix" begin
                 M = GiacMatrix(:m, 1, 1)
                 @test size(M) == (1, 1)
-                if is_stub_mode()
-                    @test_broken string(M[1, 1]) == "m11"
-                else
-                    @test string(M[1, 1]) == "m11"
-                end
+                @test string(M[1, 1]) == "m11"
             end
         end
     end

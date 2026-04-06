@@ -3,42 +3,24 @@
         # T077-T080 [US5]: Test polynomial factorization via invoke_cmd
         p = giac_eval("x^2 - 1")
 
-        if is_stub_mode()
-            # In stub mode, invoke_cmd returns a stub GiacExpr (no error)
-            result = invoke_cmd(:factor, p)
-            @test result isa GiacExpr
-        else
-            # With real GIAC, factorization works
-            @test string(invoke_cmd(:factor, p)) == "(x-1)*(x+1)"
-        end
+        # With real GIAC, factorization works
+        @test string(invoke_cmd(:factor, p)) == "(x-1)*(x+1)"
     end
 
     @testset "Expansion" begin
         # T081-T084 [US5]: Test polynomial expansion via invoke_cmd
         p = giac_eval("(x+1)^2")
 
-        if is_stub_mode()
-            # In stub mode, invoke_cmd returns a stub GiacExpr (no error)
-            result = invoke_cmd(:expand, p)
-            @test result isa GiacExpr
-        else
-            # With real GIAC, expansion works
-            @test string(invoke_cmd(:expand, p)) == "x^2+2*x+1"
-        end
+        # With real GIAC, expansion works
+        @test string(invoke_cmd(:expand, p)) == "x^2+2*x+1"
     end
 
     @testset "Simplification" begin
         # T085-T088 [US5]: Test simplification via invoke_cmd
         e = giac_eval("(x^2-1)/(x-1)")
 
-        if is_stub_mode()
-            # In stub mode, invoke_cmd returns a stub GiacExpr (no error)
-            result = invoke_cmd(:simplify, e)
-            @test result isa GiacExpr
-        else
-            # With real GIAC, simplification works
-            @test string(invoke_cmd(:simplify, e)) == "x+1"
-        end
+        # With real GIAC, simplification works
+        @test string(invoke_cmd(:simplify, e)) == "x+1"
     end
 
     @testset "Solving" begin
@@ -46,15 +28,9 @@
         eq = giac_eval("x^2 - 4")
         x = giac_eval("x")
 
-        if is_stub_mode()
-            # In stub mode, invoke_cmd returns a stub GiacExpr (no error)
-            result = invoke_cmd(:solve, eq, x)
-            @test result isa GiacExpr
-        else
-            # With real GIAC, solving works
-            result = string(invoke_cmd(:solve, eq, x))
-            @test contains(result, "-2") && contains(result, "2")
-        end
+        # With real GIAC, solving works
+        result = string(invoke_cmd(:solve, eq, x))
+        @test contains(result, "-2") && contains(result, "2")
     end
 
     @testset "GCD" begin
@@ -62,13 +38,7 @@
         a = giac_eval("x^2 - 1")
         b = giac_eval("x - 1")
 
-        if is_stub_mode()
-            # In stub mode, invoke_cmd returns a stub GiacExpr (no error)
-            result = invoke_cmd(:gcd, a, b)
-            @test result isa GiacExpr
-        else
-            # With real GIAC, gcd works
-            @test string(invoke_cmd(:gcd, a, b)) == "x-1"
-        end
+        # With real GIAC, gcd works
+        @test string(invoke_cmd(:gcd, a, b)) == "x-1"
     end
 end

@@ -6,68 +6,58 @@
 
     @testset "Matrix Construction" begin
         # T098-T100 [US6]: Test matrix construction
-        if !is_stub_mode()
-            A = GiacMatrix([1 2; 3 4])
-            @test size(A) == (2, 2)
-            @test size(A, 1) == 2
-            @test size(A, 2) == 2
-        end
+        A = GiacMatrix([1 2; 3 4])
+        @test size(A) == (2, 2)
+        @test size(A, 1) == 2
+        @test size(A, 2) == 2
     end
 
     @testset "Determinant" begin
         # T101-T104 [US6]: Test determinant computation
         @test isdefined(LinearAlgebra, :det)
 
-        if !is_stub_mode()
-            A = GiacMatrix([1 2; 3 4])
-            d = det(A)
-            @test d isa GiacExpr
-            @test string(d) == "-2"
+        A = GiacMatrix([1 2; 3 4])
+        d = det(A)
+        @test d isa GiacExpr
+        @test string(d) == "-2"
 
-            # Symbolic matrix
-            B = GiacMatrix([[giac_eval("a"), giac_eval("b")],
-                           [giac_eval("c"), giac_eval("d")]])
-            d_sym = det(B)
-            @test contains(string(d_sym), "a") && contains(string(d_sym), "d")
-        end
+        # Symbolic matrix
+        B = GiacMatrix([[giac_eval("a"), giac_eval("b")],
+                       [giac_eval("c"), giac_eval("d")]])
+        d_sym = det(B)
+        @test contains(string(d_sym), "a") && contains(string(d_sym), "d")
     end
 
     @testset "Inverse" begin
         # T105-T108 [US6]: Test matrix inversion
-        if !is_stub_mode()
-            A = GiacMatrix([1 2; 3 4])
-            A_inv = inv(A)
-            @test A_inv isa GiacMatrix
-            @test size(A_inv) == (2, 2)
-        end
+        A = GiacMatrix([1 2; 3 4])
+        A_inv = inv(A)
+        @test A_inv isa GiacMatrix
+        @test size(A_inv) == (2, 2)
     end
 
     @testset "Trace" begin
         # T109-T112 [US6]: Test trace computation
         @test isdefined(LinearAlgebra, :tr)
 
-        if !is_stub_mode()
-            A = GiacMatrix([1 2; 3 4])
-            t = tr(A)
-            @test t isa GiacExpr
-            @test string(t) == "5"
+        A = GiacMatrix([1 2; 3 4])
+        t = tr(A)
+        @test t isa GiacExpr
+        @test string(t) == "5"
 
-            # Symbolic matrix
-            B = GiacMatrix([[giac_eval("a"), giac_eval("b")],
-                           [giac_eval("c"), giac_eval("d")]])
-            t_sym = tr(B)
-            @test string(t_sym) == "a+d"
-        end
+        # Symbolic matrix
+        B = GiacMatrix([[giac_eval("a"), giac_eval("b")],
+                       [giac_eval("c"), giac_eval("d")]])
+        t_sym = tr(B)
+        @test string(t_sym) == "a+d"
     end
 
     @testset "Transpose" begin
         # T113-T116 [US6]: Test transpose
-        if !is_stub_mode()
-            A = GiacMatrix([1 2; 3 4])
-            At = transpose(A)
-            @test At isa GiacMatrix
-            @test size(At) == (2, 2)
-        end
+        A = GiacMatrix([1 2; 3 4])
+        At = transpose(A)
+        @test At isa GiacMatrix
+        @test size(At) == (2, 2)
     end
 
     @testset "Matrix Operators" begin

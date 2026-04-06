@@ -746,10 +746,6 @@ println(help)  # "factor(Expr) - Factor a polynomial..."
 function giac_help(cmd::Union{Symbol, String})::String
     cmd_str = string(cmd)
 
-    if is_stub_mode()
-        return ""
-    end
-
     # Use giac_eval to get help
     try
         result = with_giac_lock() do
@@ -835,14 +831,10 @@ function help(cmd::Union{Symbol, String})::HelpResult
     help_text = giac_help(cmd_sym)
 
     if isempty(help_text)
-        if is_stub_mode()
-            return HelpResult(cmd_str, "[Help not available in stub mode]", String[], String[])
-        else
-            # Get suggestions for unknown commands (005-nearest-command-suggestions)
-            suggestions = suggest_commands(cmd_sym)
-            suggestion_text = _format_suggestions(suggestions)
-            return HelpResult(cmd_str, "[No help found for: $cmd_str.$suggestion_text]", String[], String[])
-        end
+        # Get suggestions for unknown commands (005-nearest-command-suggestions)
+        suggestions = suggest_commands(cmd_sym)
+        suggestion_text = _format_suggestions(suggestions)
+        return HelpResult(cmd_str, "[No help found for: $cmd_str.$suggestion_text]", String[], String[])
     end
 
     return _parse_help(help_text, cmd_str)
@@ -1164,8 +1156,8 @@ function search_commands_by_description(query::Union{Symbol, String}; n::Int=DEF
         n = DEFAULT_SEARCH_LIMIT
     end
 
-    # Return empty in stub mode
-    if is_stub_mode() || isempty(VALID_COMMANDS)
+    # Return empty if no commands loaded
+    if isempty(VALID_COMMANDS)
         return Symbol[]
     end
 

@@ -4,9 +4,6 @@
 using Giac
 using Giac.Commands: factor, expand, diff, integrate, limit, simplify, solve
 
-# Check mode
-println("Stub mode: ", is_stub_mode())  # if library is installed correctly it should return false
-
 # Basic evaluation through GIAC
 result = giac_eval("2 + 3")        # 5
 factored = giac_eval("factor(x^2 - 1)")  # (x-1)*(x+1)

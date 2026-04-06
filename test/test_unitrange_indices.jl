@@ -15,13 +15,11 @@
             @test M isa GiacMatrix
             @test size(M) == (3, 3)
 
-            if !is_stub_mode()
-                # Indices 0-9 don't need underscore separators
-                @test string(M[1, 1]) == "m00"
-                @test string(M[1, 2]) == "m01"
-                @test string(M[2, 1]) == "m10"
-                @test string(M[3, 3]) == "m22"
-            end
+            # Indices 0-9 don't need underscore separators
+            @test string(M[1, 1]) == "m00"
+            @test string(M[1, 2]) == "m01"
+            @test string(M[2, 1]) == "m10"
+            @test string(M[3, 3]) == "m22"
         end
 
         @testset "Arbitrary range (5:7, 1:3)" begin
@@ -30,13 +28,11 @@
             @test A isa GiacMatrix
             @test size(A) == (3, 3)
 
-            if !is_stub_mode()
-                # All indices ≤ 9, no separator needed
-                @test string(A[1, 1]) == "A51"
-                @test string(A[1, 3]) == "A53"
-                @test string(A[3, 1]) == "A71"
-                @test string(A[3, 3]) == "A73"
-            end
+            # All indices ≤ 9, no separator needed
+            @test string(A[1, 1]) == "A51"
+            @test string(A[1, 3]) == "A53"
+            @test string(A[3, 1]) == "A71"
+            @test string(A[3, 3]) == "A73"
         end
 
         @testset "Vector with 0-based UnitRange (0:4)" begin
@@ -45,12 +41,10 @@
             @test v isa GiacMatrix
             @test size(v) == (5, 1)
 
-            if !is_stub_mode()
-                # Single dimension indices 0-9 don't need separator
-                @test string(v[1, 1]) == "v0"
-                @test string(v[3, 1]) == "v2"
-                @test string(v[5, 1]) == "v4"
-            end
+            # Single dimension indices 0-9 don't need separator
+            @test string(v[1, 1]) == "v0"
+            @test string(v[3, 1]) == "v2"
+            @test string(v[5, 1]) == "v4"
         end
 
         @testset "StepRange (0:2:6)" begin
@@ -59,13 +53,11 @@
             @test s isa GiacMatrix
             @test size(s) == (4, 1)  # 0, 2, 4, 6 = 4 elements
 
-            if !is_stub_mode()
-                # Indices 0-9 don't need separator
-                @test string(s[1, 1]) == "s0"
-                @test string(s[2, 1]) == "s2"
-                @test string(s[3, 1]) == "s4"
-                @test string(s[4, 1]) == "s6"
-            end
+            # Indices 0-9 don't need separator
+            @test string(s[1, 1]) == "s0"
+            @test string(s[2, 1]) == "s2"
+            @test string(s[3, 1]) == "s4"
+            @test string(s[4, 1]) == "s6"
         end
 
         @testset "Negative indices (-1:1)" begin
@@ -74,12 +66,10 @@
             @test x isa GiacMatrix
             @test size(x) == (3, 1)
 
-            if !is_stub_mode()
-                # Negative indices use 'm' prefix (m = minus) to avoid GIAC parsing issues
-                @test string(x[1, 1]) == "x_m1"
-                @test string(x[2, 1]) == "x_0"
-                @test string(x[3, 1]) == "x_1"
-            end
+            # Negative indices use 'm' prefix (m = minus) to avoid GIAC parsing issues
+            @test string(x[1, 1]) == "x_m1"
+            @test string(x[2, 1]) == "x_0"
+            @test string(x[3, 1]) == "x_1"
         end
 
         @testset "Mixed arguments (3, 0:2)" begin
@@ -88,13 +78,11 @@
             @test M isa GiacMatrix
             @test size(M) == (3, 3)
 
-            if !is_stub_mode()
-                # First dimension uses 1:3, second uses 0:2
-                # All indices ≤ 9, no separator needed
-                @test string(M[1, 1]) == "M10"
-                @test string(M[1, 3]) == "M12"
-                @test string(M[3, 1]) == "M30"
-            end
+            # First dimension uses 1:3, second uses 0:2
+            # All indices ≤ 9, no separator needed
+            @test string(M[1, 1]) == "M10"
+            @test string(M[1, 3]) == "M12"
+            @test string(M[3, 1]) == "M30"
         end
 
         @testset "Large range requiring separator (5:15)" begin
@@ -103,12 +91,10 @@
             @test L isa GiacMatrix
             @test size(L) == (11, 1)
 
-            if !is_stub_mode()
-                # Indices > 9 require underscore separator
-                @test string(L[1, 1]) == "L_5"
-                @test string(L[6, 1]) == "L_10"
-                @test string(L[11, 1]) == "L_15"
-            end
+            # Indices > 9 require underscore separator
+            @test string(L[1, 1]) == "L_5"
+            @test string(L[6, 1]) == "L_10"
+            @test string(L[11, 1]) == "L_15"
         end
 
         @testset "Single-element range (5:5)" begin
@@ -117,10 +103,8 @@
             @test S isa GiacMatrix
             @test size(S) == (1, 1)
 
-            if !is_stub_mode()
-                # Single digit indices, no separator
-                @test string(S[1, 1]) == "S55"
-            end
+            # Single digit indices, no separator
+            @test string(S[1, 1]) == "S55"
         end
     end
 
@@ -136,11 +120,9 @@
             @test length(result) == 3
             @test result isa Tuple
 
-            if !is_stub_mode()
-                @test string(result[1]) == "psi0"
-                @test string(result[2]) == "psi1"
-                @test string(result[3]) == "psi2"
-            end
+            @test string(result[1]) == "psi0"
+            @test string(result[2]) == "psi1"
+            @test string(result[3]) == "psi2"
         end
 
         @testset "2D custom ranges (0:1, 0:2)" begin
@@ -148,13 +130,11 @@
             result = @giac_several_vars T 0:1 0:2
             @test length(result) == 6
 
-            if !is_stub_mode()
-                # Row-major order: T00, T01, T02, T10, T11, T12
-                @test string(result[1]) == "T00"
-                @test string(result[2]) == "T01"
-                @test string(result[3]) == "T02"
-                @test string(result[4]) == "T10"
-            end
+            # Row-major order: T00, T01, T02, T10, T11, T12
+            @test string(result[1]) == "T00"
+            @test string(result[2]) == "T01"
+            @test string(result[3]) == "T02"
+            @test string(result[4]) == "T10"
         end
 
         @testset "Indices 5:7" begin
@@ -162,11 +142,9 @@
             result = @giac_several_vars x 5:7
             @test length(result) == 3
 
-            if !is_stub_mode()
-                @test string(result[1]) == "x5"
-                @test string(result[2]) == "x6"
-                @test string(result[3]) == "x7"
-            end
+            @test string(result[1]) == "x5"
+            @test string(result[2]) == "x6"
+            @test string(result[3]) == "x7"
         end
 
         @testset "Negative indices (-1:1)" begin
@@ -174,12 +152,10 @@
             result = @giac_several_vars c -1:1
             @test length(result) == 3
 
-            if !is_stub_mode()
-                # Negative indices use 'm' prefix (m = minus) to avoid GIAC parsing issues
-                @test string(result[1]) == "c_m1"
-                @test string(result[2]) == "c_0"
-                @test string(result[3]) == "c_1"
-            end
+            # Negative indices use 'm' prefix (m = minus) to avoid GIAC parsing issues
+            @test string(result[1]) == "c_m1"
+            @test string(result[2]) == "c_0"
+            @test string(result[3]) == "c_1"
         end
 
         @testset "StepRange (0:2:4)" begin
@@ -187,11 +163,9 @@
             result = @giac_several_vars q 0:2:4
             @test length(result) == 3  # 0, 2, 4
 
-            if !is_stub_mode()
-                @test string(result[1]) == "q0"
-                @test string(result[2]) == "q2"
-                @test string(result[3]) == "q4"
-            end
+            @test string(result[1]) == "q0"
+            @test string(result[2]) == "q2"
+            @test string(result[3]) == "q4"
         end
 
         @testset "Mixed arguments (2, 0:1)" begin
@@ -199,13 +173,11 @@
             result = @giac_several_vars mixed 2 0:1
             @test length(result) == 4  # 2 × 2
 
-            if !is_stub_mode()
-                # First dim: 1:2, second dim: 0:1
-                @test string(result[1]) == "mixed10"
-                @test string(result[2]) == "mixed11"
-                @test string(result[3]) == "mixed20"
-                @test string(result[4]) == "mixed21"
-            end
+            # First dim: 1:2, second dim: 0:1
+            @test string(result[1]) == "mixed10"
+            @test string(result[2]) == "mixed11"
+            @test string(result[3]) == "mixed20"
+            @test string(result[4]) == "mixed21"
         end
 
         @testset "Empty range (5:4)" begin
@@ -220,12 +192,10 @@
             result = @giac_several_vars w 5:15
             @test length(result) == 11
 
-            if !is_stub_mode()
-                # Indices > 9 require underscore separator
-                @test string(result[1]) == "w_5"
-                @test string(result[6]) == "w_10"
-                @test string(result[11]) == "w_15"
-            end
+            # Indices > 9 require underscore separator
+            @test string(result[1]) == "w_5"
+            @test string(result[6]) == "w_10"
+            @test string(result[11]) == "w_15"
         end
     end
 
@@ -241,12 +211,10 @@
             @test M isa GiacMatrix
             @test size(M) == (3, 3)
 
-            if !is_stub_mode()
-                # All indices 1-9, no separator needed (same as before)
-                @test string(M[1, 1]) == "m11"
-                @test string(M[2, 2]) == "m22"
-                @test string(M[3, 3]) == "m33"
-            end
+            # All indices 1-9, no separator needed (same as before)
+            @test string(M[1, 1]) == "m11"
+            @test string(M[2, 2]) == "m22"
+            @test string(M[3, 3]) == "m33"
         end
 
         @testset "@giac_several_vars a 2 3 unchanged" begin
@@ -254,12 +222,10 @@
             result = @giac_several_vars a 2 3
             @test length(result) == 6
 
-            if !is_stub_mode()
-                @test string(result[1]) == "a11"
-                @test string(result[2]) == "a12"
-                @test string(result[3]) == "a13"
-                @test string(result[4]) == "a21"
-            end
+            @test string(result[1]) == "a11"
+            @test string(result[2]) == "a12"
+            @test string(result[3]) == "a13"
+            @test string(result[4]) == "a21"
         end
 
         @testset "size() returns correct dimensions for ranges" begin

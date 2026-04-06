@@ -103,7 +103,7 @@ export GiacExpr, GiacContext, GiacMatrix, GiacError, HelpResult, GiacInput
 export D, DerivativeExpr, DerivativePoint, DerivativeCondition
 
 # Core functions
-export giac_eval, to_julia, is_stub_mode, list_commands, help_count
+export giac_eval, to_julia, list_commands, help_count
 
 # Macros (011-giac-symbol-macro, 012-giac-several-var)
 export @giac_var, @giac_several_vars
@@ -233,7 +233,7 @@ println("First 10: ", cmds[1:10])
 ```
 """
 function list_commands()
-    if !_stub_mode[] && GiacCxxBindings._have_library
+    if GiacCxxBindings._have_library
         cmds_str = GiacCxxBindings.list_commands()
         return split(cmds_str, '\n')
     end
@@ -246,7 +246,7 @@ end
 Return the number of commands in the GIAC help database.
 """
 function help_count()
-    if !_stub_mode[] && GiacCxxBindings._have_library
+    if GiacCxxBindings._have_library
         return GiacCxxBindings.help_count()
     end
     return 0

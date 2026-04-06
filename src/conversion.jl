@@ -266,7 +266,7 @@ end
 # Part of feature 031-fix-solve-to-julia: Use CxxWrap bindings exclusively
 function _vector_length(g::GiacExpr)::Int
     with_giac_lock() do
-        if !_stub_mode[] && GiacCxxBindings._have_library
+        if GiacCxxBindings._have_library
             gen = _ptr_to_gen(g)
             if gen !== nothing
                 # Use correct CxxWrap method name: vect_size() on Gen object
@@ -280,7 +280,7 @@ end
 
 function _vector_element(g::GiacExpr, i::Int)::GiacExpr
     with_giac_lock() do
-        if !_stub_mode[] && GiacCxxBindings._have_library
+        if GiacCxxBindings._have_library
             gen = _ptr_to_gen(g)
             if gen !== nothing
                 # Use correct CxxWrap method name: vect_at(index) on Gen object

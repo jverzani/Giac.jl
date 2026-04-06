@@ -2,12 +2,6 @@
 # Feature: 003-giac-commands (updated for 009-commands-submodule)
 
 @testset "Dynamic Command Invocation (US1)" begin
-    # Skip tests if in stub mode (no GIAC library)
-    if Giac.is_stub_mode()
-        @warn "Skipping command tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     @testset "Single-arg invocation" begin
         # T012: Test invoke_cmd(:factor, expr)
@@ -64,11 +58,6 @@
 end
 
 @testset "Method Syntax on GiacExpr (US5)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping method syntax tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     @testset "Method syntax basic" begin
         # T024: Test expr.factor()
@@ -110,11 +99,6 @@ end
 end
 
 @testset "Multi-Argument Command Support (US4)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping multi-arg tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     @testset "Substitution" begin
         # T033: Test invoke_cmd(:subst, expr, var, value)
@@ -156,11 +140,6 @@ end
 end
 
 @testset "Vector Input for GIAC Commands (032-vector-input-solve)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping vector input tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     @testset "US1: Solve systems of equations with vectors" begin
         @giac_var x y z
@@ -241,11 +220,6 @@ end
 end
 
 @testset "Base Function Extensions" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping Base extension tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     @testset "Base.sin" begin
         # T065: Test Base.sin(giac_eval("x"))
@@ -298,11 +272,6 @@ end
 # GiacMatrix Command Support (058-commands-matrix-support)
 # ============================================================================
 @testset "GiacMatrix Command Support (058-commands-matrix-support)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping GiacMatrix command tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     M = GiacMatrix([[1, 2], [3, 4]])
 
@@ -354,11 +323,6 @@ end
 # HeldCmd Equation Tilde Operator (059-heldcmd-equation-tilde)
 # ============================================================================
 @testset "HeldCmd Equation Tilde Operator (059-heldcmd-equation-tilde)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping HeldCmd tilde tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     using Giac.Commands: hold_cmd, release
     using Giac: HeldEquation
@@ -428,11 +392,6 @@ end
 # HeldCmd Specialized LaTeX: Limit, Sum, Product, Sum_Riemann (060-heldcmd-latex-limit-sum)
 # ============================================================================
 @testset "HeldCmd Limit LaTeX (060 - US1)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping limit LaTeX tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     using Giac.Commands: hold_cmd
 
@@ -487,11 +446,6 @@ end
 end
 
 @testset "HeldCmd Sum/Product LaTeX (060 - US2)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping sum/product LaTeX tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     using Giac.Commands: hold_cmd
 
@@ -555,11 +509,6 @@ end
 end
 
 @testset "HeldCmd Sum Riemann LaTeX (060 - US3)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping sum_riemann LaTeX tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     using Giac.Commands: hold_cmd
 

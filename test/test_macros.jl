@@ -56,44 +56,26 @@
         @testset "with diff command" begin
             @giac_var x
             expr = giac_eval("x^2")
-            if !is_stub_mode()
-                result = invoke_cmd(:diff, expr, x)
-                @test string(result) == "2*x"
-            else
-                # In stub mode, verify types work together
-                @test x isa GiacExpr
-                @test expr isa GiacExpr
-            end
+            result = invoke_cmd(:diff, expr, x)
+            @test string(result) == "2*x"
         end
 
         # T022: @giac_var variable + giac_eval arithmetic
         @testset "with giac_eval arithmetic" begin
             @giac_var x
             one = giac_eval("1")
-            if !is_stub_mode()
-                result = x + one
-                @test result isa GiacExpr
-                @test string(result) == "x+1"
-            else
-                # In stub mode, verify types
-                @test x isa GiacExpr
-                @test one isa GiacExpr
-            end
+            result = x + one
+            @test result isa GiacExpr
+            @test string(result) == "x+1"
         end
 
         # T023: @giac_var variable + manual giac_eval variable interop
         @testset "with manual giac_eval variable" begin
             @giac_var x
             y = giac_eval("y")
-            if !is_stub_mode()
-                result = x + y
-                @test result isa GiacExpr
-                @test string(result) == "x+y"
-            else
-                # In stub mode, verify types
-                @test x isa GiacExpr
-                @test y isa GiacExpr
-            end
+            result = x + y
+            @test result isa GiacExpr
+            @test string(result) == "x+y"
         end
     end
 
@@ -139,12 +121,10 @@
             @giac_var func_x(x_var)
             @test func_x isa GiacExpr
             @test string(func_x) == "func_x(x_var)"
-            if !is_stub_mode()
-                @giac_var x_var
-                result = invoke_cmd(:diff, func_x, x_var)
-                @test result isa GiacExpr
-                # Result should be the derivative of func_x with respect to x_var
-            end
+            @giac_var x_var
+            result = invoke_cmd(:diff, func_x, x_var)
+            @test result isa GiacExpr
+            # Result should be the derivative of func_x with respect to x_var
         end
 
         # T007: Separate @giac_var u(t) and @giac_var t work together
@@ -241,11 +221,9 @@
             @test b1 isa GiacExpr
             @test b2 isa GiacExpr
             @test b3 isa GiacExpr
-            if !is_stub_mode()
-                result = b1 + b2 + b3
-                @test result isa GiacExpr
-                @test string(result) == "b1+b2+b3"
-            end
+            result = b1 + b2 + b3
+            @test result isa GiacExpr
+            @test string(result) == "b1+b2+b3"
         end
 
         # T006: Edge case - single variable
@@ -292,11 +270,9 @@
             @giac_several_vars n 2 2
             @test n11 isa GiacExpr
             @test n22 isa GiacExpr
-            if !is_stub_mode()
-                # Determinant calculation
-                det = n11 * n22 - n12 * n21
-                @test det isa GiacExpr
-            end
+            # Determinant calculation
+            det = n11 * n22 - n12 * n21
+            @test det isa GiacExpr
         end
 
         # T012: Square matrix

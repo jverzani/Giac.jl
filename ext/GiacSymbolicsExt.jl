@@ -1,6 +1,6 @@
 # Extension module for Symbolics.jl integration
 # Provides bidirectional conversion between GiacExpr and Symbolics.Num types
-# Requires the GIAC C++ wrapper library (no stub mode support)
+# Requires the GIAC C++ wrapper library
 
 module GiacSymbolicsExt
 
@@ -345,9 +345,6 @@ giac_expr = to_giac(x^2 + y)
 ```
 """
 function Giac.to_giac(expr::Num)::GiacExpr
-    if Giac.is_stub_mode()
-        error("to_giac requires the GIAC C++ wrapper library (stub mode not supported)")
-    end
     # Use direct conversion via tree traversal to build Gen
     gen = _convert_to_gen(expr)
     # Convert Gen directly to GiacExpr without string serialization
@@ -387,10 +384,6 @@ sym_expr = to_symbolics(result)  # (x-1)*(x+1)
 ```
 """
 function Giac.to_symbolics(expr::GiacExpr)
-    if Giac.is_stub_mode()
-        error("to_symbolics requires the GIAC C++ wrapper library (stub mode not supported)")
-    end
-
     var_cache = Dict{String, Num}()
     # Feature 052: Direct pointer conversion without string serialization
     # Use _ptr_to_gen to get Gen directly from the GiacExpr pointer

@@ -117,7 +117,7 @@ function _apply_func_generic(name::String, args::Vector{String})::Ptr{Cvoid}
         GiacCxxBindings.apply_funcN(name, std_vec)
     end
 
-    return _make_stub_ptr(GiacCxxBindings.to_string(result_gen))
+    return _make_gen_ptr(result_gen)
 end
 ```
 
@@ -269,7 +269,6 @@ flowchart TD
 Tier 1 falls back to Tier 3 when:
 - The C++ function returns an error
 - Memory allocation fails
-- The library is in stub mode (testing)
 
 Tier 2 falls back to Tier 3 when:
 - Generic dispatch fails

@@ -178,9 +178,8 @@ result = sin(giac_eval("x"))
 
 **Common causes of fallback**:
 
-1. **Library in stub mode**: Check `Giac._stub_mode[]`
-2. **C++ exception**: Error in the C++ wrapper
-3. **Invalid input**: Pointer is null or invalid
+1. **C++ exception**: Error in the C++ wrapper
+2. **Invalid input**: Pointer is null or invalid
 
 ### Profiling Tips
 

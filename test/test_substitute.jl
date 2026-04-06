@@ -1,12 +1,6 @@
 # Tests for substitute function (028-substitute-mechanism)
 
 @testset "Substitute Function" begin
-    # Skip tests if GIAC library not available
-    if Giac.is_stub_mode()
-        @warn "Skipping substitute tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     # ========================================================================
     # Phase 3: User Story 1 - Single Variable Substitution (P1 MVP)

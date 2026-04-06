@@ -51,7 +51,7 @@ function giac_type(g::GiacExpr)::T
     end
 
     with_giac_lock() do
-        if !_stub_mode[] && GiacCxxBindings._have_library
+        if GiacCxxBindings._have_library
             # Get the expression string and evaluate it to get a Gen object
             expr_str = string(g)
             try
@@ -87,7 +87,7 @@ function subtype(g::GiacExpr)::Int32
     end
 
     with_giac_lock() do
-        if !_stub_mode[] && GiacCxxBindings._have_library
+        if GiacCxxBindings._have_library
             expr_str = string(g)
             try
                 gen = GiacCxxBindings.giac_eval(expr_str)
@@ -124,7 +124,7 @@ end
 # Internal helper to convert GiacExpr to CxxWrap Gen
 # Used for vector operations and other CxxWrap-based conversions
 function _ptr_to_gen(g::GiacExpr)
-    if !_stub_mode[] && GiacCxxBindings._have_library
+    if GiacCxxBindings._have_library
         # Try to retrieve stored Gen directly (no string serialization)
         gen = _get_gen(g.ptr)
         if gen !== nothing
@@ -318,7 +318,7 @@ function numer(g::GiacExpr)::GiacExpr
     elseif t == FRAC
         # Use existing _giac_rational_num or CxxWrap frac_num
         with_giac_lock() do
-            if !_stub_mode[] && GiacCxxBindings._have_library
+            if GiacCxxBindings._have_library
                 gen = _ptr_to_gen(g)
                 if gen !== nothing
                     num_gen = GiacCxxBindings.frac_num(gen)
@@ -356,7 +356,7 @@ function denom(g::GiacExpr)::GiacExpr
     elseif t == FRAC
         # Use existing _giac_rational_den or CxxWrap frac_den
         with_giac_lock() do
-            if !_stub_mode[] && GiacCxxBindings._have_library
+            if GiacCxxBindings._have_library
                 gen = _ptr_to_gen(g)
                 if gen !== nothing
                     den_gen = GiacCxxBindings.frac_den(gen)
@@ -391,7 +391,7 @@ function real_part(g::GiacExpr)::GiacExpr
     t = giac_type(g)
     if t == CPLX
         with_giac_lock() do
-            if !_stub_mode[] && GiacCxxBindings._have_library
+            if GiacCxxBindings._have_library
                 gen = _ptr_to_gen(g)
                 if gen !== nothing
                     re_gen = GiacCxxBindings.cplx_re(gen)
@@ -426,7 +426,7 @@ function imag_part(g::GiacExpr)::GiacExpr
     t = giac_type(g)
     if t == CPLX
         with_giac_lock() do
-            if !_stub_mode[] && GiacCxxBindings._have_library
+            if GiacCxxBindings._have_library
                 gen = _ptr_to_gen(g)
                 if gen !== nothing
                     im_gen = GiacCxxBindings.cplx_im(gen)
@@ -462,7 +462,7 @@ function symb_funcname(g::GiacExpr)::String
     end
 
     with_giac_lock() do
-        if !_stub_mode[] && GiacCxxBindings._have_library
+        if GiacCxxBindings._have_library
             gen = _ptr_to_gen(g)
             if gen !== nothing
                 # Use symb_sommet_name (the actual C++ binding name)
@@ -496,7 +496,7 @@ function symb_argument(g::GiacExpr)::GiacExpr
     end
 
     with_giac_lock() do
-        if !_stub_mode[] && GiacCxxBindings._have_library
+        if GiacCxxBindings._have_library
             gen = _ptr_to_gen(g)
             if gen !== nothing
                 # Use symb_feuille (the actual C++ binding name)

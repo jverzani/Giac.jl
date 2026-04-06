@@ -1,6 +1,6 @@
 # Extension module for MathJSON.jl integration
 # Provides bidirectional conversion between GiacExpr/GiacMatrix and MathJSON expression types
-# Requires the GIAC C++ wrapper library (no stub mode support)
+# Requires the GIAC C++ wrapper library
 
 module GiacMathJSONExt
 
@@ -593,9 +593,6 @@ to_mathjson(giac_eval("pi"))   # SymbolExpr("Pi")
 ```
 """
 function Giac.to_mathjson(expr::GiacExpr)::AbstractMathJSONExpr
-    if Giac.is_stub_mode()
-        error("to_mathjson requires the GIAC C++ wrapper library (stub mode not supported)")
-    end
     gen = Giac._ptr_to_gen(expr)
     return _gen_to_mathjson(gen)
 end
@@ -613,9 +610,6 @@ to_mathjson(m)  # FunctionExpr(:Matrix, [FunctionExpr(:List, ...), ...])
 ```
 """
 function Giac.to_mathjson(m::GiacMatrix)::AbstractMathJSONExpr
-    if Giac.is_stub_mode()
-        error("to_mathjson requires the GIAC C++ wrapper library (stub mode not supported)")
-    end
     rows, cols = size(m)
     row_exprs = AbstractMathJSONExpr[]
     for i in 1:rows
@@ -638,9 +632,6 @@ end
 Convert a MathJSON NumberExpr to a GiacExpr.
 """
 function Giac.to_giac(expr::NumberExpr)::GiacExpr
-    if Giac.is_stub_mode()
-        error("to_giac requires the GIAC C++ wrapper library (stub mode not supported)")
-    end
     gen = _mathjson_to_gen(expr)
     ptr = Giac._gen_to_ptr(gen)
     return GiacExpr(ptr)
@@ -652,9 +643,6 @@ end
 Convert a MathJSON SymbolExpr to a GiacExpr.
 """
 function Giac.to_giac(expr::SymbolExpr)::GiacExpr
-    if Giac.is_stub_mode()
-        error("to_giac requires the GIAC C++ wrapper library (stub mode not supported)")
-    end
     gen = _mathjson_to_gen(expr)
     ptr = Giac._gen_to_ptr(gen)
     return GiacExpr(ptr)
@@ -673,9 +661,6 @@ to_giac(expr)  # GiacExpr: x+1
 ```
 """
 function Giac.to_giac(expr::FunctionExpr)::GiacExpr
-    if Giac.is_stub_mode()
-        error("to_giac requires the GIAC C++ wrapper library (stub mode not supported)")
-    end
     gen = _mathjson_to_gen(expr)
     ptr = Giac._gen_to_ptr(gen)
     return GiacExpr(ptr)

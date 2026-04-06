@@ -136,14 +136,8 @@ end
 @testset "help() Function" begin
     @testset "returns HelpResult type" begin
         # T019: Test help(:cmd) returning HelpResult type
-        if !Giac.is_stub_mode()
-            result = Giac.help(:factor)
-            @test result isa Giac.HelpResult
-        else
-            result = Giac.help(:factor)
-            @test result isa Giac.HelpResult
-            @test occursin("stub mode", result.description)
-        end
+        result = Giac.help(:factor)
+        @test result isa Giac.HelpResult
     end
 
     @testset "command field accessible" begin
@@ -154,36 +148,21 @@ end
 
     @testset "description field accessible" begin
         # T021: Test accessing .description field
-        if !Giac.is_stub_mode()
-            result = Giac.help(:factor)
-            @test !isempty(result.description)
-            @test result.description isa String
-        end
+        result = Giac.help(:factor)
+        @test !isempty(result.description)
+        @test result.description isa String
     end
 
     @testset "related field is Vector{String}" begin
         # T022: Test accessing .related as Vector{String}
-        if !Giac.is_stub_mode()
-            result = Giac.help(:factor)
-            @test result.related isa Vector{String}
-        end
+        result = Giac.help(:factor)
+        @test result.related isa Vector{String}
     end
 
     @testset "examples field is Vector{String}" begin
         # T023: Test accessing .examples as Vector{String}
-        if !Giac.is_stub_mode()
-            result = Giac.help(:factor)
-            @test result.examples isa Vector{String}
-        end
-    end
-
-    @testset "stub mode handling" begin
-        # T026: Handle stub mode - return HelpResult with placeholder
-        if Giac.is_stub_mode()
-            result = Giac.help(:factor)
-            @test result isa Giac.HelpResult
-            @test occursin("stub mode", result.description)
-        end
+        result = Giac.help(:factor)
+        @test result.examples isa Vector{String}
     end
 end
 
@@ -200,11 +179,6 @@ end
 # ============================================================================
 
 @testset "Command Discovery (US2)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping discovery tests - GIAC library not available (stub mode)"
-        @test_skip true
-        return
-    end
 
     @testset "String prefix search" begin
         # T041: Test search_commands("sin")
@@ -288,31 +262,23 @@ end
 @testset "Registry Initialization" begin
     @testset "VALID_COMMANDS populated" begin
         # T077: Test that VALID_COMMANDS is non-empty after module load
-        if !Giac.is_stub_mode()
-            @test !isempty(Giac.VALID_COMMANDS)
-        else
-            @test isempty(Giac.VALID_COMMANDS)  # Empty in stub mode
-        end
+        @test !isempty(Giac.VALID_COMMANDS)
     end
 
     @testset "factor in VALID_COMMANDS" begin
         # T078: Test that :factor is in VALID_COMMANDS (now Symbol)
-        if !Giac.is_stub_mode()
-            @test :factor in Giac.VALID_COMMANDS
-        end
+        @test :factor in Giac.VALID_COMMANDS
     end
 
     @testset "command count approximation" begin
         # T079: Test that command count matches help_count() approximately
-        if !Giac.is_stub_mode()
-            count = help_count()
-            valid_count = length(Giac.VALID_COMMANDS)
-            # Should be in the same ballpark (within 50%)
-            @test valid_count > 0
-            if count > 0
-                ratio = valid_count / count
-                @test 0.5 < ratio < 2.0
-            end
+        count = help_count()
+        valid_count = length(Giac.VALID_COMMANDS)
+        # Should be in the same ballpark (within 50%)
+        @test valid_count > 0
+        if count > 0
+            ratio = valid_count / count
+            @test 0.5 < ratio < 2.0
         end
     end
 end
@@ -387,79 +353,72 @@ end
 # ============================================================================
 
 @testset "suggest_commands (US1)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping most suggestion tests - GIAC library not available (stub mode)"
-        # Stub mode: suggest_commands returns empty vector, does not throw
-        @test suggest_commands(:factr) isa Vector{Symbol}
-        @test isempty(suggest_commands(:factr))
-    else
-        @testset "returns Vector{Symbol}" begin
-            # T010: Test suggest_commands(:factr) returns Vector{Symbol}
-            result = suggest_commands(:factr)
-            @test result isa Vector{Symbol}
-        end
+    @testset "returns Vector{Symbol}" begin
+        # T010: Test suggest_commands(:factr) returns Vector{Symbol}
+        result = suggest_commands(:factr)
+        @test result isa Vector{Symbol}
+    end
 
-        @testset "sorted by distance then alphabetically" begin
-            # T011: Test that suggestions are sorted by distance then alphabetically
-            result = Giac.suggest_commands_with_distances(:factr)
-            if length(result) >= 2
-                # Check distance ordering
-                for i in 1:(length(result)-1)
-                    @test result[i][2] <= result[i+1][2]
-                    # If same distance, check alphabetical
-                    if result[i][2] == result[i+1][2]
-                        @test string(result[i][1]) <= string(result[i+1][1])
-                    end
+    @testset "sorted by distance then alphabetically" begin
+        # T011: Test that suggestions are sorted by distance then alphabetically
+        result = Giac.suggest_commands_with_distances(:factr)
+        if length(result) >= 2
+            # Check distance ordering
+            for i in 1:(length(result)-1)
+                @test result[i][2] <= result[i+1][2]
+                # If same distance, check alphabetical
+                if result[i][2] == result[i+1][2]
+                    @test string(result[i][1]) <= string(result[i+1][1])
                 end
             end
         end
+    end
 
-        @testset "exact match returns empty" begin
-            # T012: Test that exact match returns empty suggestions
-            @test isempty(suggest_commands(:factor))
-            @test isempty(suggest_commands(:sin))
-        end
+    @testset "exact match returns empty" begin
+        # T012: Test that exact match returns empty suggestions
+        @test isempty(suggest_commands(:factor))
+        @test isempty(suggest_commands(:sin))
+    end
 
-        @testset "adaptive threshold" begin
-            # T013: Test for adaptive threshold (short vs long input)
-            # Short input - strict threshold
-            short_result = suggest_commands(:si)
-            # Long input - more relaxed threshold
-            long_result = suggest_commands(:integrat)
-            # Both should be non-empty if similar commands exist
-            # The long input should potentially find more matches due to higher threshold
-            @test long_result isa Vector{Symbol}
-            @test short_result isa Vector{Symbol}
-        end
+    @testset "adaptive threshold" begin
+        # T013: Test for adaptive threshold (short vs long input)
+        # Short input - strict threshold
+        short_result = suggest_commands(:si)
+        # Long input - more relaxed threshold
+        long_result = suggest_commands(:integrat)
+        # Both should be non-empty if similar commands exist
+        # The long input should potentially find more matches due to higher threshold
+        @test long_result isa Vector{Symbol}
+        @test short_result isa Vector{Symbol}
+    end
 
-        @testset "no results when distance exceeds threshold" begin
-            # T014: Test that no results when distance exceeds threshold
-            # Very different string that won't match anything
-            result = suggest_commands(:xyzzyqwerty)
-            @test isempty(result)
-        end
+    @testset "no results when distance exceeds threshold" begin
+        # T014: Test that no results when distance exceeds threshold
+        # Very different string that won't match anything
+        result = suggest_commands(:xyzzyqwerty)
+        @test isempty(result)
+    end
 
-        @testset "factor typo suggestions" begin
-            # Verify :factor appears in suggestions for "factr"
-            result = suggest_commands(:factr)
-            @test :factor in result
-        end
+    @testset "factor typo suggestions" begin
+        # Verify :factor appears in suggestions for "factr"
+        result = suggest_commands(:factr)
+        @test :factor in result
+    end
 
-        @testset "case insensitive" begin
-            # T017: Input normalization - case insensitive
-            lower_result = suggest_commands(:factr)
-            upper_result = suggest_commands(:FACTR)
-            @test lower_result == upper_result
-        end
+    @testset "case insensitive" begin
+        # T017: Input normalization - case insensitive
+        lower_result = suggest_commands(:factr)
+        upper_result = suggest_commands(:FACTR)
+        @test lower_result == upper_result
+    end
 
-        @testset "respects n parameter" begin
-            # Test that n parameter limits results
-            result_default = suggest_commands(:fact)
-            result_limited = suggest_commands(:fact, n=2)
-            @test length(result_limited) <= 2
-            if length(result_default) > 2
-                @test length(result_limited) < length(result_default)
-            end
+    @testset "respects n parameter" begin
+        # Test that n parameter limits results
+        result_default = suggest_commands(:fact)
+        result_limited = suggest_commands(:fact, n=2)
+        @test length(result_limited) <= 2
+        if length(result_default) > 2
+            @test length(result_limited) < length(result_default)
         end
     end
 end
@@ -497,15 +456,13 @@ end
 
     @testset "suggest_commands respects configured count" begin
         # T024: Test that suggest_commands respects configured count
-        if !Giac.is_stub_mode()
-            set_suggestion_count(2)
-            result = suggest_commands(:fact)
-            @test length(result) <= 2
+        set_suggestion_count(2)
+        result = suggest_commands(:fact)
+        @test length(result) <= 2
 
-            set_suggestion_count(6)
-            result = suggest_commands(:fact)
-            @test length(result) <= 6
-        end
+        set_suggestion_count(6)
+        result = suggest_commands(:fact)
+        @test length(result) <= 6
     end
 
     # Restore original count
@@ -517,38 +474,33 @@ end
 # ============================================================================
 
 @testset "suggest_commands_with_distances (US3)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping distance tests - GIAC library not available (stub mode)"
-        @test_skip true
-    else
-        @testset "returns Vector{Tuple{Symbol, Int}}" begin
-            # T029: Test returns Vector{Tuple{Symbol, Int}}
-            result = Giac.suggest_commands_with_distances(:factr)
-            @test result isa Vector{Tuple{Symbol, Int}}
-        end
+    @testset "returns Vector{Tuple{Symbol, Int}}" begin
+        # T029: Test returns Vector{Tuple{Symbol, Int}}
+        result = Giac.suggest_commands_with_distances(:factr)
+        @test result isa Vector{Tuple{Symbol, Int}}
+    end
 
-        @testset "distances are correct" begin
-            # T030: Test that distances are correct in results
-            result = Giac.suggest_commands_with_distances(:factr)
-            for (cmd, dist) in result
-                @test dist == Giac._levenshtein("factr", lowercase(string(cmd)))
+    @testset "distances are correct" begin
+        # T030: Test that distances are correct in results
+        result = Giac.suggest_commands_with_distances(:factr)
+        for (cmd, dist) in result
+            @test dist == Giac._levenshtein("factr", lowercase(string(cmd)))
+        end
+    end
+
+    @testset "results sorted by distance" begin
+        # T031: Test that results are sorted by distance
+        result = Giac.suggest_commands_with_distances(:factr)
+        if length(result) >= 2
+            for i in 1:(length(result)-1)
+                @test result[i][2] <= result[i+1][2]
             end
         end
+    end
 
-        @testset "results sorted by distance" begin
-            # T031: Test that results are sorted by distance
-            result = Giac.suggest_commands_with_distances(:factr)
-            if length(result) >= 2
-                for i in 1:(length(result)-1)
-                    @test result[i][2] <= result[i+1][2]
-                end
-            end
-        end
-
-        @testset "exact match returns empty" begin
-            # Exact match should return no suggestions (distance 0 is excluded)
-            @test isempty(Giac.suggest_commands_with_distances(:factor))
-        end
+    @testset "exact match returns empty" begin
+        # Exact match should return no suggestions (distance 0 is excluded)
+        @test isempty(Giac.suggest_commands_with_distances(:factor))
     end
 end
 
@@ -577,19 +529,14 @@ end
 # ============================================================================
 
 @testset "help() with suggestions (T035)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping help suggestions test - GIAC library not available (stub mode)"
-        @test_skip true
-    else
-        @testset "help(:factr) includes suggestions" begin
-            # T035: Test that help(:factr) includes suggestions in description
-            result = Giac.help(:factr)
-            @test result isa Giac.HelpResult
-            # Should contain "Did you mean:" in the description
-            @test occursin("Did you mean:", result.description)
-            # Should suggest "factor"
-            @test occursin("factor", result.description)
-        end
+    @testset "help(:factr) includes suggestions" begin
+        # T035: Test that help(:factr) includes suggestions in description
+        result = Giac.help(:factr)
+        @test result isa Giac.HelpResult
+        # Should contain "Did you mean:" in the description
+        @test occursin("Did you mean:", result.description)
+        # Should suggest "factor"
+        @test occursin("factor", result.description)
     end
 end
 
@@ -631,49 +578,35 @@ end
 # ============================================================================
 
 @testset "search_commands_by_description (US1)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping description search tests - GIAC library not available (stub mode)"
-        @test_skip true
-    else
-        @testset "returns Vector{Symbol}" begin
-            # T008: Test search_commands_by_description returns Vector{Symbol}
-            result = search_commands_by_description("factor")
-            @test result isa Vector{Symbol}
-        end
-
-        @testset "results sorted by relevance" begin
-            # T009: Test that results are sorted by relevance
-            # This is tested by checking ordering - we can't guarantee specific results
-            # but we can verify the function doesn't error
-            result = search_commands_by_description("polynomial")
-            @test result isa Vector{Symbol}
-        end
-
-        @testset "empty query returns empty" begin
-            # T010: Test for empty query returns empty Vector{String}
-            @test isempty(search_commands_by_description(""))
-        end
-
-        @testset "whitespace-only query returns empty" begin
-            # T011: Test for whitespace-only query returns empty Vector{String}
-            @test isempty(search_commands_by_description("   "))
-            @test isempty(search_commands_by_description("\t\n"))
-        end
-
-        @testset "non-matching query returns empty" begin
-            # T012: Test that non-matching query returns empty results
-            result = search_commands_by_description("xyznonexistentterm12345")
-            @test isempty(result)
-        end
+    @testset "returns Vector{Symbol}" begin
+        # T008: Test search_commands_by_description returns Vector{Symbol}
+        result = search_commands_by_description("factor")
+        @test result isa Vector{Symbol}
     end
 
-    @testset "stub mode returns empty" begin
-        # T013: This test runs regardless of mode - stub mode returns empty safely
-        if Giac.is_stub_mode()
-            @test isempty(search_commands_by_description("factor"))
-        else
-            @test true  # Pass if not in stub mode
-        end
+    @testset "results sorted by relevance" begin
+        # T009: Test that results are sorted by relevance
+        # This is tested by checking ordering - we can't guarantee specific results
+        # but we can verify the function doesn't error
+        result = search_commands_by_description("polynomial")
+        @test result isa Vector{Symbol}
+    end
+
+    @testset "empty query returns empty" begin
+        # T010: Test for empty query returns empty Vector{String}
+        @test isempty(search_commands_by_description(""))
+    end
+
+    @testset "whitespace-only query returns empty" begin
+        # T011: Test for whitespace-only query returns empty Vector{String}
+        @test isempty(search_commands_by_description("   "))
+        @test isempty(search_commands_by_description("\t\n"))
+    end
+
+    @testset "non-matching query returns empty" begin
+        # T012: Test that non-matching query returns empty results
+        result = search_commands_by_description("xyznonexistentterm12345")
+        @test isempty(result)
     end
 end
 
@@ -682,32 +615,27 @@ end
 # ============================================================================
 
 @testset "search_commands_by_description case-insensitive (US2)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping case-insensitive tests - GIAC library not available (stub mode)"
-        @test_skip true
-    else
-        @testset "case variations return identical results" begin
-            # T020: Test that case variations return identical results
-            lower_result = search_commands_by_description("polynomial")
-            upper_result = search_commands_by_description("POLYNOMIAL")
-            mixed_result = search_commands_by_description("Polynomial")
-            @test lower_result == upper_result
-            @test lower_result == mixed_result
-        end
+    @testset "case variations return identical results" begin
+        # T020: Test that case variations return identical results
+        lower_result = search_commands_by_description("polynomial")
+        upper_result = search_commands_by_description("POLYNOMIAL")
+        mixed_result = search_commands_by_description("Polynomial")
+        @test lower_result == upper_result
+        @test lower_result == mixed_result
+    end
 
-        @testset "uppercase query INTEGRAL" begin
-            # T021: Test for uppercase query "INTEGRAL"
-            result = search_commands_by_description("INTEGRAL")
-            @test result isa Vector{Symbol}
-            # Same as lowercase
-            @test result == search_commands_by_description("integral")
-        end
+    @testset "uppercase query INTEGRAL" begin
+        # T021: Test for uppercase query "INTEGRAL"
+        result = search_commands_by_description("INTEGRAL")
+        @test result isa Vector{Symbol}
+        # Same as lowercase
+        @test result == search_commands_by_description("integral")
+    end
 
-        @testset "mixed case query" begin
-            # T022: Test for mixed case query "Polynomial"
-            result = search_commands_by_description("Polynomial")
-            @test result isa Vector{Symbol}
-        end
+    @testset "mixed case query" begin
+        # T022: Test for mixed case query "Polynomial"
+        result = search_commands_by_description("Polynomial")
+        @test result isa Vector{Symbol}
     end
 end
 
@@ -716,38 +644,31 @@ end
 # ============================================================================
 
 @testset "search_commands_by_description result limiting (US3)" begin
-    if Giac.is_stub_mode()
-        @warn "Skipping result limiting tests - GIAC library not available (stub mode)"
-        @test_skip true
-    else
-        @testset "n=5 limits results" begin
-            # T025: Test that n=5 limits results to 5
-            result = search_commands_by_description("function", n=5)
-            @test length(result) <= 5
-        end
+    @testset "n=5 limits results" begin
+        # T025: Test that n=5 limits results to 5
+        result = search_commands_by_description("function", n=5)
+        @test length(result) <= 5
+    end
 
-        @testset "default n=20" begin
-            # T026: Test that default n=20 is used when not specified
-            # This tests the default behavior
-            result = search_commands_by_description("a")  # Common letter, many results
-            @test length(result) <= 20
-        end
+    @testset "default n=20" begin
+        # T026: Test that default n=20 is used when not specified
+        # This tests the default behavior
+        result = search_commands_by_description("a")  # Common letter, many results
+        @test length(result) <= 20
+    end
 
-        @testset "n<=0 uses default" begin
-            # T027: Test that n<=0 uses DEFAULT_SEARCH_LIMIT
-            result_zero = search_commands_by_description("a", n=0)
-            result_neg = search_commands_by_description("a", n=-5)
-            @test length(result_zero) <= 20
-            @test length(result_neg) <= 20
-        end
+    @testset "n<=0 uses default" begin
+        # T027: Test that n<=0 uses DEFAULT_SEARCH_LIMIT
+        result_zero = search_commands_by_description("a", n=0)
+        result_neg = search_commands_by_description("a", n=-5)
+        @test length(result_zero) <= 20
+        @test length(result_neg) <= 20
     end
 
     @testset "Symbol input works" begin
         # Test Symbol input
-        if !Giac.is_stub_mode()
-            result = search_commands_by_description(:factor)
-            @test result isa Vector{Symbol}
-        end
+        result = search_commands_by_description(:factor)
+        @test result isa Vector{Symbol}
     end
 end
 
@@ -798,73 +719,59 @@ end
 end
 
 @testset "is_valid_command (008)" begin
-    if !Giac.is_stub_mode()
-        @testset "valid commands return true" begin
-            @test is_valid_command(:factor) == true
-            @test is_valid_command("integrate") == true
-            @test is_valid_command(:sin) == true
-            @test is_valid_command(:diff) == true
-        end
+    @testset "valid commands return true" begin
+        @test is_valid_command(:factor) == true
+        @test is_valid_command("integrate") == true
+        @test is_valid_command(:sin) == true
+        @test is_valid_command(:diff) == true
+    end
 
-        @testset "invalid commands return false" begin
-            @test is_valid_command(:notacommand) == false
-            @test is_valid_command("xyz123fake") == false
-            @test is_valid_command(:thisdoesnotexist) == false
-        end
-    else
-        @testset "stub mode returns false" begin
-            @test is_valid_command(:factor) == false
-            @test is_valid_command(:notacommand) == false
-        end
+    @testset "invalid commands return false" begin
+        @test is_valid_command(:notacommand) == false
+        @test is_valid_command("xyz123fake") == false
+        @test is_valid_command(:thisdoesnotexist) == false
     end
 end
 
 @testset "exportable_commands (008)" begin
-    if !Giac.is_stub_mode()
-        @testset "returns Vector{Symbol}" begin
-            cmds = exportable_commands()
-            @test cmds isa Vector{Symbol}
-        end
+    @testset "returns Vector{Symbol}" begin
+        cmds = exportable_commands()
+        @test cmds isa Vector{Symbol}
+    end
 
-        @testset "returns many commands" begin
-            cmds = exportable_commands()
-            @test length(cmds) >= 1500  # Should be ~2000+
-        end
+    @testset "returns many commands" begin
+        cmds = exportable_commands()
+        @test length(cmds) >= 1500  # Should be ~2000+
+    end
 
-        @testset "results are sorted" begin
-            cmds = exportable_commands()
-            @test issorted(cmds, by=string)
-        end
+    @testset "results are sorted" begin
+        cmds = exportable_commands()
+        @test issorted(cmds, by=string)
+    end
 
-        @testset "includes safe commands" begin
-            cmds = exportable_commands()
-            @test :factor in cmds
-            @test :expand in cmds
-            @test :simplify in cmds
-            @test :trigexpand in cmds
-        end
+    @testset "includes safe commands" begin
+        cmds = exportable_commands()
+        @test :factor in cmds
+        @test :expand in cmds
+        @test :simplify in cmds
+        @test :trigexpand in cmds
+    end
 
-        @testset "excludes conflicting commands" begin
-            cmds = exportable_commands()
-            @test :eval ∉ cmds
-            @test :sin ∉ cmds
-            @test :cos ∉ cmds
-            @test :det ∉ cmds
-            @test :for ∉ cmds
-        end
+    @testset "excludes conflicting commands" begin
+        cmds = exportable_commands()
+        @test :eval ∉ cmds
+        @test :sin ∉ cmds
+        @test :cos ∉ cmds
+        @test :det ∉ cmds
+        @test :for ∉ cmds
+    end
 
-        @testset "excludes operators" begin
-            cmds = exportable_commands()
-            @test Symbol("+") ∉ cmds
-            @test Symbol("-") ∉ cmds
-            @test Symbol("*") ∉ cmds
-            @test Symbol("/") ∉ cmds
-        end
-    else
-        @testset "stub mode returns empty" begin
-            cmds = exportable_commands()
-            @test isempty(cmds)
-        end
+    @testset "excludes operators" begin
+        cmds = exportable_commands()
+        @test Symbol("+") ∉ cmds
+        @test Symbol("-") ∉ cmds
+        @test Symbol("*") ∉ cmds
+        @test Symbol("/") ∉ cmds
     end
 end
 
@@ -940,37 +847,30 @@ end
 end
 
 @testset "available_commands (008)" begin
-    if !Giac.is_stub_mode()
-        @testset "returns Vector{Symbol}" begin
-            cmds = available_commands()
-            @test cmds isa Vector{Symbol}
-        end
+    @testset "returns Vector{Symbol}" begin
+        cmds = available_commands()
+        @test cmds isa Vector{Symbol}
+    end
 
-        @testset "returns many commands" begin
-            cmds = available_commands()
-            @test length(cmds) >= 1900  # Actual count is ~1958
-        end
+    @testset "returns many commands" begin
+        cmds = available_commands()
+        @test length(cmds) >= 1900  # Actual count is ~1958
+    end
 
-        @testset "all start with ASCII letter" begin
-            cmds = available_commands()
-            for cmd in cmds
-                cmd_str = string(cmd)
-                @test !isempty(cmd_str)
-                @test isletter(first(cmd_str))
-                @test isascii(first(cmd_str))
-            end
+    @testset "all start with ASCII letter" begin
+        cmds = available_commands()
+        for cmd in cmds
+            cmd_str = string(cmd)
+            @test !isempty(cmd_str)
+            @test isletter(first(cmd_str))
+            @test isascii(first(cmd_str))
         end
+    end
 
-        @testset "includes both exportable and conflicting commands" begin
-            cmds = available_commands()
-            @test :factor in cmds
-            @test :sin in cmds  # In available but not exportable
-            @test :eval in cmds  # In available but not exportable
-        end
-    else
-        @testset "stub mode returns empty" begin
-            cmds = available_commands()
-            @test isempty(cmds)
-        end
+    @testset "includes both exportable and conflicting commands" begin
+        cmds = available_commands()
+        @test :factor in cmds
+        @test :sin in cmds  # In available but not exportable
+        @test :eval in cmds  # In available but not exportable
     end
 end

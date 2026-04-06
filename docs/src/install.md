@@ -11,16 +11,12 @@ Pkg.add(url="https://github.com/s-celles/Giac.jl")  # until unregistered
 
 ## Developer mode installation
 
-### Option 1: Stub Mode (No C++ Dependencies)
-
-For development or testing without the full GIAC library:
+### Option 1: Basic Installation
 
 ```julia
 using Pkg
 Pkg.add(url="https://github.com/s-celles/Giac.jl")
 ```
-
-In stub mode, basic operations work but return placeholder values.
 
 ### Option 2: Full Integration (With GIAC 2.0.0)
 
@@ -68,10 +64,7 @@ export LD_LIBRARY_PATH=$(julia -e 'using GIAC_jll; print(GIAC_jll.artifact_dir)'
 ```julia
 using Giac
 
-# Check mode
-println("Stub mode: ", is_stub_mode())
-
-# If stub mode is false, full GIAC integration is working
+# Verify GIAC integration is working
 result = giac_eval("factor(x^2 - 1)")
 println(result)  # (x-1)*(x+1)
 ```

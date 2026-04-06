@@ -369,17 +369,10 @@ Giac.to_giac
 Giac.to_symbolics
 ```
 
-## Utility Functions
-
-```@docs
-is_stub_mode
-```
-
 ### Core Functions
 
 | Function | Description |
 |----------|-------------|
 | `giac_eval(expr)` | Evaluate a GIAC expression string |
 | `invoke_cmd(cmd, args...)` | Invoke any GIAC command dynamically |
-| `is_stub_mode()` | Check if running without GIAC library |
 | `to_julia(expr)` | Convert GiacExpr to Julia type |

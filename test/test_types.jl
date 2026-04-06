@@ -50,12 +50,8 @@
     @testset "Callable GiacExpr - Helper Function" begin
         # T002: Test _arg_to_giac_string with GiacExpr argument
         @testset "_arg_to_giac_string with GiacExpr" begin
-            if !is_stub_mode()
-                x = giac_eval("x")
-                @test Giac._arg_to_giac_string(x) == "x"
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            x = giac_eval("x")
+            @test Giac._arg_to_giac_string(x) == "x"
         end
 
         # T003: Test _arg_to_giac_string with Int argument
@@ -102,197 +98,137 @@
     @testset "Callable GiacExpr - US1: Basic Function Evaluation" begin
         # T007: Test calling GiacExpr with single numeric argument
         @testset "u(0) with numeric argument" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                result = u(0)
-                @test result isa GiacExpr
-                @test string(result) == "u(0)"
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var u(t)
+            result = u(0)
+            @test result isa GiacExpr
+            @test string(result) == "u(0)"
         end
 
         # T008: Test calling GiacExpr with GiacExpr argument
         @testset "f(x) with GiacExpr argument" begin
-            if !is_stub_mode()
-                @giac_var f(t) x
-                result = f(x)
-                @test result isa GiacExpr
-                @test string(result) == "f(x)"
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var f(t) x
+            result = f(x)
+            @test result isa GiacExpr
+            @test string(result) == "f(x)"
         end
 
         # T009: Test calling GiacExpr created by giac_eval
         @testset "callable on giac_eval result" begin
-            if !is_stub_mode()
-                u = giac_eval("u")
-                result = u(0)
-                @test result isa GiacExpr
-                @test string(result) == "u(0)"
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            u = giac_eval("u")
+            result = u(0)
+            @test result isa GiacExpr
+            @test string(result) == "u(0)"
         end
 
         # T010: Test calling GiacExpr with zero arguments
         @testset "u() with zero arguments" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                result = u()
-                @test result isa GiacExpr
-                # GIAC simplifies u() to just u
-                @test string(result) == "u"
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var u(t)
+            result = u()
+            @test result isa GiacExpr
+            # GIAC simplifies u() to just u
+            @test string(result) == "u"
         end
     end
 
     @testset "Callable GiacExpr - US2: ODE Initial Conditions" begin
         # T014: Test u(0) ~ 1 creating valid equation
         @testset "u(0) ~ 1 creates equation" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                eq = u(0) ~ 1
-                @test eq isa GiacExpr
-                # The equation should contain "u(0)=1" or equivalent
-                eq_str = string(eq)
-                @test occursin("u(0)", eq_str)
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var u(t)
+            eq = u(0) ~ 1
+            @test eq isa GiacExpr
+            # The equation should contain "u(0)=1" or equivalent
+            eq_str = string(eq)
+            @test occursin("u(0)", eq_str)
         end
 
         # T015: Test diff(u, t)(0) ~ 1 derivative condition
         @testset "diff(u, t)(0) ~ 1 derivative condition" begin
-            if !is_stub_mode()
-                @giac_var t u(t)
-                du = invoke_cmd(:diff, u, t)
-                du_at_0 = du(0)
-                @test du_at_0 isa GiacExpr
-                eq = du_at_0 ~ 1
-                @test eq isa GiacExpr
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var t u(t)
+            du = invoke_cmd(:diff, u, t)
+            du_at_0 = du(0)
+            @test du_at_0 isa GiacExpr
+            eq = du_at_0 ~ 1
+            @test eq isa GiacExpr
         end
 
         # T016: Test diff(u, t, 2)(0) ~ 0 n-th derivative condition
         @testset "diff(u, t, 2)(0) n-th derivative" begin
-            if !is_stub_mode()
-                @giac_var t u(t)
-                d2u = invoke_cmd(:diff, u, t, 2)
-                d2u_at_0 = d2u(0)
-                @test d2u_at_0 isa GiacExpr
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var t u(t)
+            d2u = invoke_cmd(:diff, u, t, 2)
+            d2u_at_0 = d2u(0)
+            @test d2u_at_0 isa GiacExpr
         end
 
         # T017: Integration test with desolve
         @testset "desolve integration" begin
-            if !is_stub_mode()
-                @giac_var t u(t)
-                # Simple ODE: u' = 0 with u(0) = 1 should give u = 1
-                du = invoke_cmd(:diff, u, t)
-                ode = du ~ 0
-                initial = u(0) ~ 1
-                # Just verify we can construct the problem
-                @test ode isa GiacExpr
-                @test initial isa GiacExpr
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var t u(t)
+            # Simple ODE: u' = 0 with u(0) = 1 should give u = 1
+            du = invoke_cmd(:diff, u, t)
+            ode = du ~ 0
+            initial = u(0) ~ 1
+            # Just verify we can construct the problem
+            @test ode isa GiacExpr
+            @test initial isa GiacExpr
         end
     end
 
     @testset "Callable GiacExpr - US3: Multiple Arguments" begin
         # T020: Test f(0, 0) with two numeric arguments
         @testset "f(0, 0) with two numeric args" begin
-            if !is_stub_mode()
-                @giac_var f(x, y)
-                result = f(0, 0)
-                @test result isa GiacExpr
-                @test string(result) == "f(0,0)"
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var f(x, y)
+            result = f(0, 0)
+            @test result isa GiacExpr
+            @test string(result) == "f(0,0)"
         end
 
         # T021: Test f(a, b) with two GiacExpr arguments
         @testset "f(a, b) with two GiacExpr args" begin
-            if !is_stub_mode()
-                @giac_var f(x, y) a b
-                result = f(a, b)
-                @test result isa GiacExpr
-                @test string(result) == "f(a,b)"
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var f(x, y) a b
+            result = f(a, b)
+            @test result isa GiacExpr
+            @test string(result) == "f(a,b)"
         end
 
         # T022: Test f(x, 1) with mixed argument types
         @testset "f(x, 1) mixed argument types" begin
-            if !is_stub_mode()
-                @giac_var f(x, y) x
-                result = f(x, 1)
-                @test result isa GiacExpr
-                @test string(result) == "f(x,1)"
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var f(x, y) x
+            result = f(x, 1)
+            @test result isa GiacExpr
+            @test string(result) == "f(x,1)"
         end
     end
 
     @testset "Callable GiacExpr - Edge Cases" begin
         # T025: Test nested calls f(g(x))
         @testset "nested calls f(g(x))" begin
-            if !is_stub_mode()
-                @giac_var f(t) g(t) x
-                g_of_x = g(x)
-                f_of_g_of_x = f(g_of_x)
-                @test f_of_g_of_x isa GiacExpr
-                @test string(f_of_g_of_x) == "f(g(x))"
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var f(t) g(t) x
+            g_of_x = g(x)
+            f_of_g_of_x = f(g_of_x)
+            @test f_of_g_of_x isa GiacExpr
+            @test string(f_of_g_of_x) == "f(g(x))"
         end
 
         # T026: Test Rational argument u(1//2)
         @testset "Rational argument u(1//2)" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                result = u(1//2)
-                @test result isa GiacExpr
-                # GIAC should interpret 1//2 appropriately
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var u(t)
+            result = u(1//2)
+            @test result isa GiacExpr
+            # GIAC should interpret 1//2 appropriately
         end
 
         # T027: Test Float64 argument u(0.5)
         @testset "Float64 argument u(0.5)" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                result = u(0.5)
-                @test result isa GiacExpr
-                @test string(result) == "u(0.5)"
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var u(t)
+            result = u(0.5)
+            @test result isa GiacExpr
+            @test string(result) == "u(0.5)"
         end
 
         # T028: Test invalid argument type raises ArgumentError
         @testset "invalid argument type raises error" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                # Passing a Dict or other invalid type should raise ArgumentError
-                @test_throws ArgumentError u(Dict())
-            else
-                @test_broken false  # Skip in stub mode
-            end
+            @giac_var u(t)
+            # Passing a Dict or other invalid type should raise ArgumentError
+            @test_throws ArgumentError u(Dict())
         end
 
         # T029: Test null GiacExpr raises GiacError
@@ -304,28 +240,20 @@
 
         # Additional edge cases: calling derivative-form and plain identifier expressions
         @testset "calling a derivative expression" begin
-            if !is_stub_mode()
-                @giac_var t u(t)
-                du = invoke_cmd(:diff, u, t)
-                result = du(0)
-                @test result isa GiacExpr
-                result_str = string(result)
-                @test occursin("0", result_str)
-            else
-                @test_broken false
-            end
+            @giac_var t u(t)
+            du = invoke_cmd(:diff, u, t)
+            result = du(0)
+            @test result isa GiacExpr
+            result_str = string(result)
+            @test occursin("0", result_str)
         end
 
         @testset "calling plain identifier GiacExpr" begin
-            if !is_stub_mode()
-                @giac_var x
-                sin_expr = giac_eval("sin")
-                result = sin_expr(x)
-                @test result isa GiacExpr
-                @test string(result) == "sin(x)"
-            else
-                @test_broken false
-            end
+            @giac_var x
+            sin_expr = giac_eval("sin")
+            result = sin_expr(x)
+            @test result isa GiacExpr
+            @test string(result) == "sin(x)"
         end
     end
 
@@ -336,26 +264,22 @@
         # Test that MIME"text/latex" show method is defined for GiacMatrix
         @test hasmethod(Base.show, Tuple{IO, MIME"text/latex", GiacMatrix})
 
-        if !is_stub_mode()
-            # Test actual LaTeX output for GiacExpr
-            expr = giac_eval("2/(1-x)")
-            io = IOBuffer()
-            show(io, MIME"text/latex"(), expr)
-            latex_output = String(take!(io))
-            @test startswith(latex_output, "\$\$")
-            @test endswith(latex_output, "\$\$")
-            @test length(latex_output) > 4  # More than just "$$$$"
+        # Test actual LaTeX output for GiacExpr
+        expr = giac_eval("2/(1-x)")
+        io = IOBuffer()
+        show(io, MIME"text/latex"(), expr)
+        latex_output = String(take!(io))
+        @test startswith(latex_output, "\$\$")
+        @test endswith(latex_output, "\$\$")
+        @test length(latex_output) > 4  # More than just "$$$$"
 
-            # Test actual LaTeX output for GiacMatrix
-            M = GiacMatrix([1 2; 3 4])
-            io = IOBuffer()
-            show(io, MIME"text/latex"(), M)
-            latex_output = String(take!(io))
-            @test startswith(latex_output, "\$\$")
-            @test endswith(latex_output, "\$\$")
-        else
-            @test_broken false  # Skipping LaTeX output tests in stub mode
-        end
+        # Test actual LaTeX output for GiacMatrix
+        M = GiacMatrix([1 2; 3 4])
+        io = IOBuffer()
+        show(io, MIME"text/latex"(), M)
+        latex_output = String(take!(io))
+        @test startswith(latex_output, "\$\$")
+        @test endswith(latex_output, "\$\$")
     end
 
     # ========================================================================
@@ -382,217 +306,153 @@
 
     @testset "Derivative Operator D - Basic Creation" begin
         @testset "D(u) creates first derivative" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                du = D(u)
-                @test du isa DerivativeExpr
-                @test du.order == 1
-                @test du.funcname == "u"
-                @test du.varname == "t"
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            du = D(u)
+            @test du isa DerivativeExpr
+            @test du.order == 1
+            @test du.funcname == "u"
+            @test du.varname == "t"
         end
 
         @testset "D(u, 2) creates second derivative" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                d2u = D(u, 2)
-                @test d2u isa DerivativeExpr
-                @test d2u.order == 2
-                @test d2u.funcname == "u"
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            d2u = D(u, 2)
+            @test d2u isa DerivativeExpr
+            @test d2u.order == 2
+            @test d2u.funcname == "u"
         end
 
         @testset "D(D(u)) creates second derivative" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                d2u = D(D(u))
-                @test d2u isa DerivativeExpr
-                @test d2u.order == 2
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            d2u = D(D(u))
+            @test d2u isa DerivativeExpr
+            @test d2u.order == 2
         end
 
         @testset "D(u, 3) creates third derivative" begin
-            if !is_stub_mode()
-                @giac_var y(t)
-                d3y = D(y, 3)
-                @test d3y isa DerivativeExpr
-                @test d3y.order == 3
-            else
-                @test_broken false
-            end
+            @giac_var y(t)
+            d3y = D(y, 3)
+            @test d3y isa DerivativeExpr
+            @test d3y.order == 3
         end
 
         @testset "D on non-function raises error" begin
-            if !is_stub_mode()
-                @giac_var x
-                @test_throws ArgumentError D(x)
-            else
-                @test_broken false
-            end
+            @giac_var x
+            @test_throws ArgumentError D(x)
         end
     end
 
     @testset "Derivative Operator D - Initial Conditions" begin
         @testset "D(u)(0) returns DerivativePoint" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                result = D(u)(0)
-                @test result isa DerivativePoint
-                @test string(result) == "u'(0)"
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            result = D(u)(0)
+            @test result isa DerivativePoint
+            @test string(result) == "u'(0)"
         end
 
         @testset "D(u, 2)(0) returns DerivativePoint with double prime" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                result = D(u, 2)(0)
-                @test result isa DerivativePoint
-                @test string(result) == "u''(0)"
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            result = D(u, 2)(0)
+            @test result isa DerivativePoint
+            @test string(result) == "u''(0)"
         end
 
         @testset "D(D(u))(0) returns DerivativePoint with double prime" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                result = D(D(u))(0)
-                @test result isa DerivativePoint
-                @test string(result) == "u''(0)"
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            result = D(D(u))(0)
+            @test result isa DerivativePoint
+            @test string(result) == "u''(0)"
         end
 
         @testset "D(u)(0) ~ 1 creates DerivativeCondition" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                eq = D(u)(0) ~ 1
-                @test eq isa DerivativeCondition
-                @test string(eq) == "u'(0)=1"
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            eq = D(u)(0) ~ 1
+            @test eq isa DerivativeCondition
+            @test string(eq) == "u'(0)=1"
         end
 
         @testset "D(u, 2)(0) ~ 0 creates DerivativeCondition" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                eq = D(u, 2)(0) ~ 0
-                @test eq isa DerivativeCondition
-                @test string(eq) == "u''(0)=0"
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            eq = D(u, 2)(0) ~ 0
+            @test eq isa DerivativeCondition
+            @test string(eq) == "u''(0)=0"
         end
     end
 
     @testset "Derivative Operator D - Arithmetic" begin
         @testset "D(D(u)) + u produces diff notation" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                result = D(D(u)) + u
-                @test result isa GiacExpr
-                # Should contain diff notation
-                result_str = string(result)
-                @test occursin("diff", result_str)
-                @test occursin("u(t)", result_str)
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            result = D(D(u)) + u
+            @test result isa GiacExpr
+            # Should contain diff notation
+            result_str = string(result)
+            @test occursin("diff", result_str)
+            @test occursin("u(t)", result_str)
         end
 
         @testset "D(D(u)) + u ~ 0 creates ODE" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                ode = D(D(u)) + u ~ 0
-                @test ode isa GiacExpr
-                result_str = string(ode)
-                @test occursin("diff", result_str)
-                @test occursin("=0", result_str)
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            ode = D(D(u)) + u ~ 0
+            @test ode isa GiacExpr
+            result_str = string(ode)
+            @test occursin("diff", result_str)
+            @test occursin("=0", result_str)
         end
 
         @testset "D(u) * 2 arithmetic" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                result = 2 * D(u)
-                @test result isa GiacExpr
-            else
-                @test_broken false
-            end
+            @giac_var u(t)
+            result = 2 * D(u)
+            @test result isa GiacExpr
         end
     end
 
     @testset "Derivative Operator D - Full ODE Solve" begin
         @testset "2nd order ODE: u'' + u = 0" begin
-            if !is_stub_mode()
-                using Giac.Commands: desolve
-                @giac_var t u(t)
+            using Giac.Commands: desolve
+            @giac_var t u(t)
 
-                # Build ODE and initial conditions
-                ode = D(D(u)) + u ~ 0
-                u0 = u(0) ~ 1
-                du0 = D(u)(0) ~ 0
+            # Build ODE and initial conditions
+            ode = D(D(u)) + u ~ 0
+            u0 = u(0) ~ 1
+            du0 = D(u)(0) ~ 0
 
-                # Solve - note: desolve requires just the function name :u, not u(t)
-                result = desolve([ode, u0, du0], t, :u)
-                result_str = string(result)
+            # Solve - note: desolve requires just the function name :u, not u(t)
+            result = desolve([ode, u0, du0], t, :u)
+            result_str = string(result)
 
-                # Should be cos(t)
-                @test occursin("cos", result_str)
-            else
-                @test_broken false
-            end
+            # Should be cos(t)
+            @test occursin("cos", result_str)
         end
 
         @testset "3rd order ODE: y''' - y = 0" begin
-            if !is_stub_mode()
-                using Giac.Commands: desolve
-                @giac_var t y(t)
+            using Giac.Commands: desolve
+            @giac_var t y(t)
 
-                # Build ODE and initial conditions
-                ode = D(y, 3) - y ~ 0
-                y0 = y(0) ~ 1
-                dy0 = D(y)(0) ~ 1
-                d2y0 = D(y, 2)(0) ~ 1
+            # Build ODE and initial conditions
+            ode = D(y, 3) - y ~ 0
+            y0 = y(0) ~ 1
+            dy0 = D(y)(0) ~ 1
+            d2y0 = D(y, 2)(0) ~ 1
 
-                # Solve - note: desolve requires just the function name :y, not y(t)
-                result = desolve([ode, y0, dy0, d2y0], t, :y)
-                result_str = string(result)
+            # Solve - note: desolve requires just the function name :y, not y(t)
+            result = desolve([ode, y0, dy0, d2y0], t, :y)
+            result_str = string(result)
 
-                # Should be exp(t)
-                @test occursin("exp", result_str)
-            else
-                @test_broken false
-            end
+            # Should be exp(t)
+            @test occursin("exp", result_str)
         end
     end
 
     @testset "Derivative Operator D - Display" begin
         @testset "show method displays primes" begin
-            if !is_stub_mode()
-                @giac_var u(t)
-                io = IOBuffer()
-                show(io, D(u))
-                @test String(take!(io)) == "D: u'(t)"
+            @giac_var u(t)
+            io = IOBuffer()
+            show(io, D(u))
+            @test String(take!(io)) == "D: u'(t)"
 
-                io = IOBuffer()
-                show(io, D(u, 2))
-                @test String(take!(io)) == "D: u''(t)"
-            else
-                @test_broken false
-            end
+            io = IOBuffer()
+            show(io, D(u, 2))
+            @test String(take!(io)) == "D: u''(t)"
         end
     end
 end

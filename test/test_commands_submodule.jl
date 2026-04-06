@@ -14,45 +14,38 @@
         # invoke_cmd is also available via Giac.Commands
         @test isdefined(Giac.Commands, :invoke_cmd)
 
-        # Test invoke_cmd functionality (only in non-stub mode)
-        if !Giac.is_stub_mode()
-            # T008: Test Giac.Commands.factor via invoke_cmd
-            expr = giac_eval("x^2 - 1")
-            result = invoke_cmd(:factor, expr)
-            @test string(result) == "(x-1)*(x+1)"
+        # Test invoke_cmd functionality
+        # T008: Test Giac.Commands.factor via invoke_cmd
+        expr = giac_eval("x^2 - 1")
+        result = invoke_cmd(:factor, expr)
+        @test string(result) == "(x-1)*(x+1)"
 
-            # Test invoke_cmd with multiple arguments (like diff)
-            x = giac_eval("x")
-            expr2 = giac_eval("x^3")
-            result2 = invoke_cmd(:diff, expr2, x)
-            @test string(result2) == "3*x^2"
+        # Test invoke_cmd with multiple arguments (like diff)
+        x = giac_eval("x")
+        expr2 = giac_eval("x^3")
+        result2 = invoke_cmd(:diff, expr2, x)
+        @test string(result2) == "3*x^2"
 
-            # Test invoke_cmd with conflicting command (sin)
-            result3 = invoke_cmd(:sin, giac_eval("0"))
-            @test string(result3) == "0"
-        end
+        # Test invoke_cmd with conflicting command (sin)
+        result3 = invoke_cmd(:sin, giac_eval("0"))
+        @test string(result3) == "0"
     end
 
     @testset "Commands Module Access" begin
-        if !Giac.is_stub_mode()
-            # T008: Test Giac.Commands.factor
-            expr = giac_eval("x^2 - 1")
-            result = Giac.Commands.factor(expr)
-            @test string(result) == "(x-1)*(x+1)"
+        # T008: Test Giac.Commands.factor
+        expr = giac_eval("x^2 - 1")
+        result = Giac.Commands.factor(expr)
+        @test string(result) == "(x-1)*(x+1)"
 
-            # T009: Test Giac.Commands.diff
-            x = giac_eval("x")
-            expr2 = giac_eval("x^3")
-            result2 = Giac.Commands.diff(expr2, x)
-            @test string(result2) == "3*x^2"
+        # T009: Test Giac.Commands.diff
+        x = giac_eval("x")
+        expr2 = giac_eval("x^3")
+        result2 = Giac.Commands.diff(expr2, x)
+        @test string(result2) == "3*x^2"
 
-            # Test other commands via qualified access
-            expand_result = Giac.Commands.expand(giac_eval("(x+1)^2"))
-            @test contains(string(expand_result), "x^2")
-        else
-            @warn "Skipping Commands Module Access tests - GIAC library not available (stub mode)"
-            @test_skip true
-        end
+        # Test other commands via qualified access
+        expand_result = Giac.Commands.expand(giac_eval("(x+1)^2"))
+        @test contains(string(expand_result), "x^2")
     end
 
     @testset "Clean Core API (US4)" begin
@@ -88,34 +81,26 @@
     end
 
     @testset "Exportable Commands Generation" begin
-        if !Giac.is_stub_mode()
-            # Commands module should have many exported commands
-            commands_exports = names(Giac.Commands)
+        # Commands module should have many exported commands
+        commands_exports = names(Giac.Commands)
 
-            # Should have invoke_cmd
-            @test :invoke_cmd ∈ commands_exports
+        # Should have invoke_cmd
+        @test :invoke_cmd ∈ commands_exports
 
-            # Should have common math commands
-            @test :factor ∈ commands_exports
-            @test :expand ∈ commands_exports
+        # Should have common math commands
+        @test :factor ∈ commands_exports
+        @test :expand ∈ commands_exports
 
-            # Should NOT have conflicting commands exported
-            @test :eval ∉ commands_exports
-            @test :sin ∉ commands_exports
-            @test :cos ∉ commands_exports
+        # Should NOT have conflicting commands exported
+        @test :eval ∉ commands_exports
+        @test :sin ∉ commands_exports
+        @test :cos ∉ commands_exports
 
-            # T026: Should have many commands (~2000+)
-            # Note: The exact count depends on exportable_commands()
-            if !isempty(Giac.VALID_COMMANDS)
-                exportable_count = length(Giac.exportable_commands())
-                @test exportable_count > 1500  # Should be ~2000+
-            end
-        else
-            # In stub mode, only invoke_cmd should be exported
-            commands_exports = names(Giac.Commands)
-            @test :invoke_cmd ∈ commands_exports
-            # Generated commands won't be present in stub mode
-            @warn "Skipping exportable commands generation tests - GIAC library not available (stub mode)"
+        # T026: Should have many commands (~2000+)
+        # Note: The exact count depends on exportable_commands()
+        if !isempty(Giac.VALID_COMMANDS)
+            exportable_count = length(Giac.exportable_commands())
+            @test exportable_count > 1500  # Should be ~2000+
         end
     end
 
@@ -125,39 +110,33 @@
         # because `using` is a compile-time operation. Instead, we verify the structure
         # supports it by checking that commands are properly exported.
 
-        if !Giac.is_stub_mode()
-            # Verify commands can be accessed directly from Commands
-            @test isdefined(Giac.Commands, :factor)
-            @test isdefined(Giac.Commands, :expand)
-            @test isdefined(Giac.Commands, :diff)
+        # Verify commands can be accessed directly from Commands
+        @test isdefined(Giac.Commands, :factor)
+        @test isdefined(Giac.Commands, :expand)
+        @test isdefined(Giac.Commands, :diff)
 
-            # T023: invoke_cmd can be selectively imported
-            @test isdefined(Giac.Commands, :invoke_cmd)
-        end
+        # T023: invoke_cmd can be selectively imported
+        @test isdefined(Giac.Commands, :invoke_cmd)
     end
 
     @testset "Conflicting Commands via invoke_cmd" begin
-        if !Giac.is_stub_mode()
-            # Conflicting commands should work via invoke_cmd
-            # These are in JULIA_CONFLICTS so not exported, but work via invoke_cmd
+        # Conflicting commands should work via invoke_cmd
+        # These are in JULIA_CONFLICTS so not exported, but work via invoke_cmd
 
-            # eval is a Julia builtin
-            result = invoke_cmd(:eval, giac_eval("2+3"))
-            @test string(result) == "5"
+        # eval is a Julia builtin
+        result = invoke_cmd(:eval, giac_eval("2+3"))
+        @test string(result) == "5"
 
-            # sin conflicts with Base.sin
-            result2 = invoke_cmd(:sin, giac_eval("pi/2"))
-            @test string(result2) == "1"
-        end
+        # sin conflicts with Base.sin
+        result2 = invoke_cmd(:sin, giac_eval("pi/2"))
+        @test string(result2) == "1"
     end
 
     @testset "GiacCommand Type Compatibility" begin
-        if !Giac.is_stub_mode()
-            # GiacCommand should still work (uses giac_cmd internally)
-            factor_cmd = GiacCommand(:factor)
-            expr = giac_eval("x^2 - 1")
-            result = factor_cmd(expr)
-            @test string(result) == "(x-1)*(x+1)"
-        end
+        # GiacCommand should still work (uses giac_cmd internally)
+        factor_cmd = GiacCommand(:factor)
+        expr = giac_eval("x^2 - 1")
+        result = factor_cmd(expr)
+        @test string(result) == "(x-1)*(x+1)"
     end
 end

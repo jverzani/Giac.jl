@@ -4,16 +4,10 @@
         f = giac_eval("x^2")
         x = giac_eval("x")
 
-        if is_stub_mode()
-            # In stub mode, invoke_cmd returns a stub GiacExpr (no error)
-            result = invoke_cmd(:diff, f, x)
-            @test result isa GiacExpr
-        else
-            # With real GIAC, differentiation works
-            @test string(invoke_cmd(:diff, f, x)) == "2*x"
-            @test string(invoke_cmd(:diff, giac_eval("x^3"), x)) == "3*x^2"
-            @test string(invoke_cmd(:diff, giac_eval("x^3"), x, 2)) == "6*x"
-        end
+        # With real GIAC, differentiation works
+        @test string(invoke_cmd(:diff, f, x)) == "2*x"
+        @test string(invoke_cmd(:diff, giac_eval("x^3"), x)) == "3*x^2"
+        @test string(invoke_cmd(:diff, giac_eval("x^3"), x, 2)) == "6*x"
     end
 
     @testset "Integration" begin
@@ -21,14 +15,8 @@
         f = giac_eval("x^2")
         x = giac_eval("x")
 
-        if is_stub_mode()
-            # In stub mode, invoke_cmd returns a stub GiacExpr (no error)
-            result = invoke_cmd(:integrate, f, x)
-            @test result isa GiacExpr
-        else
-            # With real GIAC, integration works
-            @test contains(string(invoke_cmd(:integrate, f, x)), "x^3")
-        end
+        # With real GIAC, integration works
+        @test contains(string(invoke_cmd(:integrate, f, x)), "x^3")
     end
 
     @testset "Limits" begin
@@ -37,14 +25,8 @@
         x = giac_eval("x")
         point = giac_eval("0")
 
-        if is_stub_mode()
-            # In stub mode, invoke_cmd returns a stub GiacExpr (no error)
-            result = invoke_cmd(:limit, f, x, point)
-            @test result isa GiacExpr
-        else
-            # With real GIAC, limits work
-            @test string(invoke_cmd(:limit, f, x, point)) == "1"
-        end
+        # With real GIAC, limits work
+        @test string(invoke_cmd(:limit, f, x, point)) == "1"
     end
 
     @testset "Series" begin
@@ -53,15 +35,9 @@
         x = giac_eval("x")
         point = giac_eval("0")
 
-        if is_stub_mode()
-            # In stub mode, invoke_cmd returns a stub GiacExpr (no error)
-            result = invoke_cmd(:series, f, x, point, 5)
-            @test result isa GiacExpr
-        else
-            # With real GIAC, series expansion works
-            result = string(invoke_cmd(:series, f, x, point, 4))
-            @test contains(result, "1")
-            @test contains(result, "x")
-        end
+        # With real GIAC, series expansion works
+        result = string(invoke_cmd(:series, f, x, point, 4))
+        @test contains(result, "1")
+        @test contains(result, "x")
     end
 end
