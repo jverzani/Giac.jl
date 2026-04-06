@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.21
+# v0.20.24
 
 using Markdown
 using InteractiveUtils
@@ -7,8 +7,9 @@ using InteractiveUtils
 # ╔═╡ b2c3d4e5-f6a7-8901-bcde-f12345678901
 begin
 	using Pkg
-	#Pkg.add(PackageSpec(url="https://github.com/s-celles/Giac.jl"))
-	Pkg.develop(PackageSpec(path=".."))
+	#Pkg.add("Giac")
+	Pkg.add(PackageSpec(url="https://github.com/s-celles/Giac.jl"))
+	#Pkg.develop(PackageSpec(path=".."))
 
 	using Giac
 	using Giac.Commands

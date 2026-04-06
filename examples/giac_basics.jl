@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.21
+# v0.20.24
 
 using Markdown
 using InteractiveUtils
@@ -19,14 +19,16 @@ end
 # ╔═╡ a0b1c2d3-e4f5-6789-abcd-100000000001
 begin
 	using Pkg
-	#Pkg.add(PackageSpec(url="https://github.com/s-celles/Giac.jl"))
-	Pkg.develop(PackageSpec(path=".."))
+	Pkg.add(PackageSpec(url="https://github.com/s-celles/Giac.jl"))
+	#Pkg.develop(PackageSpec(path=".."))
+	Pkg.add("PlotlyJS")
 
 	using Giac
 	using Giac.Commands
 
 	using PlutoUI
 	using Plots
+	using PlotlyJS
 	plotlyjs()
 end
 
@@ -37,9 +39,10 @@ md"""
 A beginner's guide to symbolic computation in Julia with Giac.jl.
 
 This notebook covers the fundamentals: creating symbolic variables, building expressions, performing calculus, and solving equations — all using the `Giac.Commands` API.
-
-> **Note**: If GIAC is running in stub mode (wrapper library not installed), you may see placeholder results. Install the full GIAC library for actual symbolic computation.
 """
+
+# ╔═╡ 3a6d4ee4-f580-4c7c-a10a-19dafb9e4368
+
 
 # ╔═╡ a0b1c2d3-e4f5-6789-abcd-100000000002
 md"""
@@ -451,7 +454,7 @@ begin
 		y_ = range(-3, 3, length=100)
 		
 		# Draw surface
-		surface(x_, y_, f,
+		Plots.surface(x_, y_, f,
 		    xlabel = "x", ylabel = "y", zlabel = "z",
 		    title = "Surface z = $num_expr",
 		    colorbar = true,
@@ -537,6 +540,7 @@ All commands are available via `using Giac.Commands`.
 # ╔═╡ Cell order:
 # ╟─a0b1c2d3-e4f5-6789-abcd-100000000000
 # ╠═a0b1c2d3-e4f5-6789-abcd-100000000001
+# ╠═3a6d4ee4-f580-4c7c-a10a-19dafb9e4368
 # ╟─a0b1c2d3-e4f5-6789-abcd-100000000002
 # ╠═a0b1c2d3-e4f5-6789-abcd-100000000003
 # ╠═a0b1c2d3-e4f5-6789-abcd-100000000004
