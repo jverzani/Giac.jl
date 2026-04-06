@@ -620,6 +620,7 @@ mutable struct GiacContext
 
     function GiacContext()
         ptr = _giac_create_context()
+        @info "GiacContext: ptr=$ptr C_NULL=$C_NULL equal=$(ptr == C_NULL)"
         if ptr == C_NULL
             throw(GiacError("Failed to create GIAC context", :memory))
         end
