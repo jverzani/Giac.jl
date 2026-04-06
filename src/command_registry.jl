@@ -1098,16 +1098,22 @@ Calculate relevance score for a search match.
 - `0`: No match
 """
 function _score_help_match(query::AbstractString, help_result::HelpResult)::Int
-    # Check description first (higher relevance)
-    if occursin(query, lowercase(help_result.description))
-        return 2
-    end
-
-    # Check examples (lower relevance)
-    for example in help_result.examples
-        if occursin(query, lowercase(example))
-            return 1
+    try
+        # Check description first (higher relevance)
+        if occursin(query, lowercase(help_result.description))
+            return 2
         end
+
+        # Check examples (lower relevance)
+        for example in help_result.examples
+            if occursin(query, lowercase(example))
+                return 1
+            end
+        end
+    catch e
+        # Help text from C++ may contain invalid UTF-8 bytes
+        e isa Base.InvalidCharError && return 0
+        rethrow()
     end
 
     return 0
