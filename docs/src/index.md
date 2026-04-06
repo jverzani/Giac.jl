@@ -1,10 +1,10 @@
 # Giac.jl
 
-A Julia wrapper for the [GIAC](https://www-fourier.ujf-grenoble.fr/~parisse/giac.html) computer algebra system.
+A Julia wrapper for the [Giac](https://www-fourier.ujf-grenoble.fr/~parisse/giac.html) computer algebra system.
 
 ## Features
 
-- **Dynamic Command Invocation**: Access all 2200+ GIAC commands via `invoke_cmd(:cmd, args...)`
+- **Dynamic Command Invocation**: Access all 2200+ Giac commands via `invoke_cmd(:cmd, args...)`
 - **Commands Submodule**: All ~2000+ commands available via `Giac.Commands` for clean namespace
 - **Expression Evaluation**: Parse and evaluate mathematical expressions
 - **Command Discovery**: Search commands, browse by category, built-in help via `?cmd`
