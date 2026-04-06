@@ -62,9 +62,9 @@ result = substitute(expr, Dict(a => b, b => a))
 # Returns: b^2 + a
 ```
 
-## With GIAC Functions
+## With Giac Functions
 
-The substitute function works with any GIAC-supported functions:
+The substitute function works with any Giac-supported functions:
 
 ```julia
 @giac_var θ

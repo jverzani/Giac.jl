@@ -4,7 +4,7 @@ The `Giac.Constants` module provides symbolic mathematical constants (`pi`, `e`,
 
 ## Why Use Symbolic Constants?
 
-When you use Julia's native constants (like `Base.pi`) with GIAC expressions, they are converted to floating-point approximations:
+When you use Julia's native constants (like `Base.pi`) with Giac expressions, they are converted to floating-point approximations:
 
 ```julia
 using Giac
@@ -103,9 +103,9 @@ result = invoke_cmd(:exp, i * pi)
 # Output: GiacExpr: -1
 ```
 
-## Notes on GIAC Behavior
+## Notes on Giac (C++ lib) Behavior
 
-GIAC normalizes some expressions automatically:
+Giac normalizes some expressions automatically:
 
 - `e` is often displayed as `exp(1)` in output
 - `e^2` becomes `exp(2)` (equivalent but normalized form)
@@ -123,7 +123,7 @@ using Giac
 using Symbolics
 using Giac.Constants: pi
 
-# Convert GIAC's symbolic pi to Symbolics.jl
+# Convert Giac's symbolic pi to Symbolics.jl
 pi_expr = convert(GiacExpr, pi)
 sym_pi = to_symbolics(pi_expr)  # Returns Symbolics.pi
 

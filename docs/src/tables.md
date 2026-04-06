@@ -89,12 +89,12 @@ df = DataFrame(hr)
     For interactive help, use Julia's native help system:
     ```julia
     using Giac.Commands: factor
-    ?factor  # Shows GIAC documentation in REPL
+    ?factor  # Shows Giac documentation in REPL
     ```
 
 ### All Commands Table
 
-Get a table of all ~2000 GIAC commands with documentation:
+Get a table of all ~2000 Giac commands with documentation:
 
 ```julia
 using DataFrames

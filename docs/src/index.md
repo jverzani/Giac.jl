@@ -30,11 +30,11 @@ using Pkg
 Pkg.add("Giac")  # when registered to Julia General Registry
 ```
 
-For full GIAC integration with C++ library, see the [Installation Guide](install.md).
+For full Giac integration with C++ library, see the [Installation Guide](install.md).
 
 ## Command Access
 
-GIAC commands are available through multiple access patterns:
+Giac commands are available through multiple access patterns:
 
 ### 1. Selective Import from Commands Submodule (Recommended)
 
@@ -69,7 +69,7 @@ invoke_cmd(:sin, giac_eval("pi/6"))
 
 ## Type Conversion and Introspection
 
-Convert GIAC results to native Julia types:
+Convert Giac results to native Julia types:
 
 ```julia
 using Giac
@@ -114,7 +114,7 @@ to_julia(m)  # 2×2 Matrix{Int64}
 
 ## Vector Indexing and Iteration
 
-Access GIAC vectors with Julia's native indexing:
+Access Giac vectors with Julia's native indexing:
 
 ```julia
 using Giac
@@ -156,7 +156,7 @@ integrate(exp(x), x, -Inf, 0)    # 1
 ## Modules
 
 - **[Core API](@ref)**: Types, evaluation, and main functions
-- **[Commands](@ref Giac.Commands)**: All GIAC commands as functions
+- **[Commands](@ref Giac.Commands)**: All Giac commands as functions
 - **[Constants](@ref Giac.Constants)**: Symbolic mathematical constants (pi, e, i)
 
 ## Documentation
@@ -180,10 +180,10 @@ integrate(exp(x), x, -Inf, 0)    # 1
 
 ### API Reference
 - [Core API](api/core.md) - Types, evaluation, and main functions
-- [Commands Submodule](api/commands_submodule.md) - All GIAC commands as functions
+- [Commands Submodule](api/commands_submodule.md) - All Giac commands as functions
 
 ## Related Projects
 
-- [GIAC](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html) - The underlying computer algebra system
-- [libgiac-julia-wrapper](https://github.com/s-celles/libgiac-julia-wrapper) - CxxWrap bindings for GIAC
+- [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html) - The underlying computer algebra system
+- [libgiac-julia-wrapper](https://github.com/s-celles/libgiac-julia-wrapper) - CxxWrap bindings for Giac
 - [CxxWrap.jl](https://github.com/JuliaInterop/CxxWrap.jl) - C++ wrapper generator for Julia

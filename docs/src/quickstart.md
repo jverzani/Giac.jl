@@ -4,7 +4,7 @@
 using Giac
 using Giac.Commands: factor, expand, diff, integrate, limit, simplify, solve
 
-# Basic evaluation through GIAC
+# Basic evaluation through Giac
 result = giac_eval("2 + 3")        # 5
 factored = giac_eval("factor(x^2 - 1)")  # (x-1)*(x+1)
 

@@ -4,10 +4,13 @@
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/s-celles/Giac.jl")
+
+Pkg.add("Giac")  # when registered in Julia General Registry
+# or
+Pkg.add(url="https://github.com/s-celles/Giac.jl")  # until unregistered
 ```
 
-The GIAC computer algebra library and its C++ wrapper are provided automatically via JLL packages (`GIAC_jll` and `libgiac_julia_jll`). No manual compilation or environment variables are needed.
+The Giac computer algebra library and its C++ wrapper are provided automatically via JLL packages (`GIAC_jll` and `libgiac_julia_jll`). No manual compilation or environment variables are needed.
 
 ### Requirements
 

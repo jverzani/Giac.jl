@@ -30,7 +30,7 @@ commands_in_category(:algebra)       # ["factor", "expand", "simplify", ...]
 
 ## Help System
 
-Use Julia's native help system to get documentation for GIAC commands:
+Use Julia's native help system to get documentation for Giac commands:
 
 ```julia
 using Giac
@@ -40,7 +40,7 @@ using Giac.Commands: factor, sin
 ?factor
 #   factor(expr::GiacInput, args...)
 #
-#   GIAC command: `factor`
+#   Giac command: `factor`
 #
 #   Factorizes a polynomial.
 #
@@ -49,7 +49,7 @@ using Giac.Commands: factor, sin
 #   - `partfrac`
 #   - `normal`
 #
-#   # Examples (GIAC syntax)
+#   # Examples (Giac syntax)
 #   factor(x^4-1)
 #   factor(x^4-4,sqrt(2))
 
@@ -99,7 +99,7 @@ The suggestion system uses Levenshtein edit distance with an adaptive threshold 
 |----------|-------------|
 | `?cmd` | View help in REPL (after importing cmd from Giac.Commands) |
 | `giac_help(cmd)` | Get raw help text as a string |
-| `list_commands()` | List all available GIAC commands |
+| `list_commands()` | List all available Giac commands |
 | `help_count()` | Number of commands in help database |
 | `search_commands(pattern)` | Search commands by prefix or regex |
 | `command_info(cmd)` | Get CommandInfo with name, category, aliases |

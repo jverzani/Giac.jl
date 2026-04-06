@@ -4,7 +4,7 @@ Giac.jl lets you build symbolic expressions and then wrap them into regular Juli
 
 ## Basic Idea
 
-A symbolic expression like `x^2 - 1` lives in the GIAC engine. To evaluate it at a specific point, substitute the symbolic variable with a value, then convert the result to a native Julia type:
+A symbolic expression like `x^2 - 1` lives in the Giac engine. To evaluate it at a specific point, substitute the symbolic variable with a value, then convert the result to a native Julia type:
 
 ```julia
 using Giac
@@ -87,16 +87,16 @@ f(giac_eval("a"))  # GiacExpr: "a^2-1"
 
 This is useful when the argument itself is symbolic.
 
-## Using GIAC Commands in Expressions
+## Using Giac Commands in Expressions
 
-Expressions built with GIAC commands work the same way:
+Expressions built with Giac commands work the same way:
 
 ```julia
 using Giac.Commands: sin, cos, integrate
 
 @giac_var x
 
-# Build a symbolic expression using GIAC functions
+# Build a symbolic expression using Giac functions
 expr = integrate(sin(x) * cos(x), x)
 
 # Evaluate at specific points
@@ -116,16 +116,16 @@ f(_x) = substitute(M, x => _x)
 f(3)   # [[3, 4], [6, 9]]
 ```
 
-## Defining Functions in the GIAC Engine
+## Defining Functions in the Giac Engine
 
-Instead of wrapping Julia around a symbolic expression, you can define functions directly in the GIAC engine using `giac_eval`. The GIAC context is persistent within a Julia session, so definitions survive across calls.
+Instead of wrapping Julia around a symbolic expression, you can define functions directly in the Giac engine using `giac_eval`. The Giac context is persistent within a Julia session, so definitions survive across calls.
 
 ### Simple Function Definition (`:=`)
 
 ```julia
 using Giac
 
-# Define a GIAC function
+# Define a Giac function
 giac_eval("f(x) := x^2 - 1")
 
 # Call it from Julia
@@ -135,7 +135,7 @@ to_julia(giac_eval("f(0)"))    # -1
 
 ### Piecewise Functions (`ifte`)
 
-For conditional logic, use GIAC's `ifte` (if-then-else):
+For conditional logic, use Giac's `ifte` (if-then-else):
 
 ```julia
 giac_eval("mysqcu(x) := ifte(x > 0, x^2, x^3)")
@@ -146,7 +146,7 @@ to_julia(giac_eval("mysqcu(-5)"))   # -125
 
 ### Procedures (`proc ... end`)
 
-For more complex logic with local variables and control flow, use GIAC's `proc` syntax:
+For more complex logic with local variables and control flow, use Giac's `proc` syntax:
 
 ```julia
 giac_eval("g := proc(x) local res; if x > 0 then res:=x^2 else res:=x^3 fi; res end")
@@ -159,7 +159,7 @@ to_julia(giac_eval("g(-5)"))   # -125
     With `proc`, use the `name := proc(...) ... end` syntax (not `name(x) := proc(...)`).
     Declare local variables with `local`. The last expression before `end` is the return value.
 
-### Multivariate GIAC Functions
+### Multivariate Giac Functions
 
 ```julia
 giac_eval("h(x, y) := x^2 + 2*x*y - y^2")
@@ -168,12 +168,12 @@ to_julia(giac_eval("h(1, 2)"))   # 1
 to_julia(giac_eval("h(3, 1)"))   # 14
 ```
 
-### Wrapping GIAC Functions as Julia Callables
+### Wrapping Giac Functions as Julia Callables
 
-You can combine a GIAC function definition with a Julia wrapper for a clean interface:
+You can combine a Giac function definition with a Julia wrapper for a clean interface:
 
 ```julia
-# Define in GIAC
+# Define in Giac
 giac_eval("mysqcu(x) := ifte(x > 0, x^2, x^3)")
 
 # Wrap in Julia
@@ -185,7 +185,7 @@ mysqcu(-5)   # -125
 
 ### Context Persistence
 
-All GIAC function definitions persist within the same Julia session. They are stored in the default `GiacContext` created at module initialization:
+All Giac function definitions persist within the same Julia session. They are stored in the default `GiacContext` created at module initialization:
 
 ```julia
 # Define a function
@@ -194,14 +194,14 @@ giac_eval("double(x) := 2*x")
 # Use it in another expression later
 giac_eval("double(21)")   # 42
 
-# Use it inside other GIAC definitions
+# Use it inside other Giac definitions
 giac_eval("quadruple(x) := double(double(x))")
 giac_eval("quadruple(10)")   # 40
 ```
 
 ## Performance Considerations
 
-Each call to `f(_x)` goes through the GIAC engine (substitution + evaluation). For performance-critical code with many evaluations, consider:
+Each call to `f(_x)` goes through the Giac engine (substitution + evaluation). For performance-critical code with many evaluations, consider:
 
 - **Precompiling to a native Julia function** using `eval` and `Meta.parse` on the string representation
 - **Caching results** if the same arguments are used repeatedly
@@ -214,7 +214,7 @@ Each call to `f(_x)` goes through the GIAC engine (substitution + evaluation). F
 | `f(_x) = to_julia(substitute(expr, x => _x))` | Native Julia type | Numerical evaluation |
 | `f(_x) = substitute(expr, x => _x)` | `GiacExpr` | Further symbolic work |
 | `f(_x, _y) = to_julia(substitute(expr, Dict(x => _x, y => _y)))` | Native Julia type | Multivariate evaluation |
-| `giac_eval("f(x) := ...")` then `giac_eval("f(5)")` | `GiacExpr` | GIAC-native function |
+| `giac_eval("f(x) := ...")` then `giac_eval("f(5)")` | `GiacExpr` | Giac-native function |
 | `giac_eval("g := proc(x) ... end")` then `giac_eval("g(5)")` | `GiacExpr` | Procedures with control flow |
 
 ## See Also

@@ -13,7 +13,7 @@ df = invoke_cmd(:diff, f, giac_eval("x"))  # Derivative also renders as LaTeX
 M = GiacMatrix([1 2; 3 4])  # Matrices render as LaTeX too
 ```
 
-This works because Giac.jl implements `Base.show(io, ::MIME"text/latex", expr)` which calls GIAC's native `latex` command.
+This works because Giac.jl implements `Base.show(io, ::MIME"text/latex", expr)` which calls Giac's native `latex` command.
 
 A demo notebook is available at `examples/latex_demo.jl`:
 
