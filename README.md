@@ -6,4 +6,4 @@
 [![CI](https://github.com/s-celles/Giac.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/s-celles/Giac.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/github/s-celles/Giac.jl/graph/badge.svg)](https://codecov.io/github/s-celles/Giac.jl)
 
-A Julia wrapper for the [GIAC](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html) computer algebra system.
+A Julia wrapper for the [Giac](https://www-fourier.univ-grenoble-alpes.fr/~parisse/giac.html) computer algebra system.
