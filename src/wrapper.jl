@@ -4,6 +4,8 @@
 using CxxWrap
 using Libdl
 using libcxxwrap_julia_jll
+using libgiac_julia_jll
+using GIAC_jll
 
 # Library path storage
 const _wrapper_lib_path = Ref{String}("")
@@ -27,6 +29,14 @@ function find_wrapper_library()
             if isfile(full_path)
                 return full_path
             end
+        end
+    end
+
+    # Try JLL package
+    if libgiac_julia_jll.is_available()
+        jll_path = libgiac_julia_jll.libgiac_wrapper_path
+        if isfile(jll_path)
+            return jll_path
         end
     end
 
@@ -88,9 +98,20 @@ module GiacCxxBindings
     using CxxWrap
     using Libdl
     using libcxxwrap_julia_jll
+    using libgiac_julia_jll
+    using GIAC_jll
 
-    # Get library path from environment at compile time
-    const _compile_time_lib_path = get(ENV, "GIAC_WRAPPER_LIB", "")
+    # Get library path at compile time: env var first, then JLL
+    const _compile_time_lib_path = let
+        env_path = get(ENV, "GIAC_WRAPPER_LIB", "")
+        if !isempty(env_path) && isfile(env_path)
+            env_path
+        elseif libgiac_julia_jll.is_available()
+            libgiac_julia_jll.libgiac_wrapper_path
+        else
+            ""
+        end
+    end
     const _have_library = !isempty(_compile_time_lib_path) && isfile(_compile_time_lib_path)
 
     # Storage for library handles (to prevent GC/unload)
@@ -99,6 +120,11 @@ module GiacCxxBindings
 
     # Helper function to find libgiac
     function _find_giac_lib(wrapper_path::String)
+        # Try GIAC_jll first
+        if GIAC_jll.is_available()
+            return GIAC_jll.libgiac_path
+        end
+        # Search near the wrapper library
         wrapper_dir = dirname(wrapper_path)
         for giac_name in ["libgiac.so", "libgiac.so.0", "libgiac.so.1", "libgiac.dylib"]
             for parent in [wrapper_dir, dirname(wrapper_dir), dirname(dirname(wrapper_dir))]
@@ -176,14 +202,11 @@ function _init_xcasroot(wrapper_lib_path::String)
         joinpath(dirname(dirname(dirname(wrapper_dir))), "share", "giac"),
     ]
 
-    # Also check GIAC_jll if available
-    try
-        mod = Base.require(Base.PkgId(Base.UUID("cf749d6c-42f5-550d-8800-4812740c2942"), "GIAC_jll"))
-        jll_aide_cas = mod.aide_cas_path
+    # Check GIAC_jll (direct dependency)
+    if GIAC_jll.is_available()
+        jll_aide_cas = GIAC_jll.aide_cas_path
         jll_share = dirname(jll_aide_cas)
         pushfirst!(search_paths, jll_share)
-    catch
-        # GIAC_jll not available, continue with other paths
     end
 
     for path in search_paths
