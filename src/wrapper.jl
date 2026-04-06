@@ -73,23 +73,6 @@ const _giac_lib_handle = Ref{Ptr{Cvoid}}(C_NULL)
 const _cxxwrap_lib_handle = Ref{Ptr{Cvoid}}(C_NULL)
 const _wrapper_lib_handle = Ref{Ptr{Cvoid}}(C_NULL)
 
-# Find libgiac given a wrapper path
-function _find_giac_library(wrapper_path::String)
-    wrapper_dir = dirname(wrapper_path)
-    for giac_name in ["libgiac.so", "libgiac.so.0", "libgiac.so.1", "libgiac.dylib"]
-        for parent in [wrapper_dir, dirname(wrapper_dir), dirname(dirname(wrapper_dir))]
-            # Check GIAC 2.0.0 location first, then fallback locations
-            for subdir in ["", "lib", "../giac-2.0.0/src/.libs", "build_julia", "../giac/build_julia"]
-                test_path = joinpath(parent, subdir, giac_name)
-                if isfile(test_path)
-                    return test_path
-                end
-            end
-        end
-    end
-    return "libgiac.so"  # Fall back to system search
-end
-
 # CxxWrap module for GIAC bindings
 # The @wrapmodule macro must be called at compile time, so we need the library
 # path available then via environment variable.
@@ -332,13 +315,6 @@ function _giac_free_expr(ptr::Ptr{Cvoid})
     nothing
 end
 
-function _giac_create_context()::Ptr{Cvoid}
-    # Always return a stub pointer for now
-    # The real context is managed by CxxWrap's GiacContext type
-    # TODO: integrate properly with CxxWrap context
-    return Ptr{Cvoid}(1)
-end
-
 function _giac_free_context(ptr::Ptr{Cvoid})
     if ptr == C_NULL
         return
@@ -361,28 +337,6 @@ function _giac_expr_type(ptr::Ptr{Cvoid})::Symbol
     # Complex: contains i or I
     elseif occursin(r"\bi\b", expr_str) || occursin(r"\bI\b", expr_str)
         return :complex
-    else
-        return :symbolic
-    end
-end
-
-function _type_code_to_symbol(code::Cint)::Symbol
-    if code == 0
-        return :integer
-    elseif code == 1
-        return :float
-    elseif code == 2
-        return :complex
-    elseif code == 3
-        return :rational
-    elseif code == 4
-        return :infinity
-    elseif code == 5
-        return :undefined
-    elseif code == 6
-        return :vector
-    elseif code == 7
-        return :matrix
     else
         return :symbolic
     end
@@ -480,82 +434,6 @@ function _giac_free_matrix(ptr::Ptr{Cvoid})
     nothing
 end
 
-# ============================================================================
-# Calculus operations - use string-based GIAC evaluation
-# ============================================================================
-
-function _giac_diff(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid}, n::Int, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    expr_str = _giac_expr_to_string(expr_ptr)
-    var_str = _giac_expr_to_string(var_ptr)
-    giac_cmd = n == 1 ? "diff($expr_str, $var_str)" : "diff($expr_str, $var_str, $n)"
-    return _giac_eval_string(giac_cmd, ctx_ptr)
-end
-
-function _giac_integrate(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid}, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    expr_str = _giac_expr_to_string(expr_ptr)
-    var_str = _giac_expr_to_string(var_ptr)
-    return _giac_eval_string("integrate($expr_str, $var_str)", ctx_ptr)
-end
-
-function _giac_integrate_definite(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid},
-                                   a_ptr::Ptr{Cvoid}, b_ptr::Ptr{Cvoid},
-                                   ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    expr_str = _giac_expr_to_string(expr_ptr)
-    var_str = _giac_expr_to_string(var_ptr)
-    a_str = _giac_expr_to_string(a_ptr)
-    b_str = _giac_expr_to_string(b_ptr)
-    return _giac_eval_string("integrate($expr_str, $var_str, $a_str, $b_str)", ctx_ptr)
-end
-
-function _giac_limit(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid}, point_ptr::Ptr{Cvoid},
-                     dir::Int, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    expr_str = _giac_expr_to_string(expr_ptr)
-    var_str = _giac_expr_to_string(var_ptr)
-    point_str = _giac_expr_to_string(point_ptr)
-    # dir: -1 = left, 0 = both, 1 = right
-    giac_cmd = if dir == -1
-        "limit($expr_str, $var_str, $point_str, -1)"
-    elseif dir == 1
-        "limit($expr_str, $var_str, $point_str, 1)"
-    else
-        "limit($expr_str, $var_str, $point_str)"
-    end
-    return _giac_eval_string(giac_cmd, ctx_ptr)
-end
-
-function _giac_series(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid}, point_ptr::Ptr{Cvoid},
-                      order::Int, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    expr_str = _giac_expr_to_string(expr_ptr)
-    var_str = _giac_expr_to_string(var_ptr)
-    point_str = _giac_expr_to_string(point_ptr)
-    return _giac_eval_string("series($expr_str, $var_str=$point_str, $order)", ctx_ptr)
-end
-
-# ============================================================================
-# Algebra operations - use string-based GIAC evaluation
-# ============================================================================
-
-function _giac_factor(expr_ptr::Ptr{Cvoid}, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    expr_str = _giac_expr_to_string(expr_ptr)
-    return _giac_eval_string("factor($expr_str)", ctx_ptr)
-end
-
-function _giac_expand(expr_ptr::Ptr{Cvoid}, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    expr_str = _giac_expr_to_string(expr_ptr)
-    return _giac_eval_string("expand($expr_str)", ctx_ptr)
-end
-
-function _giac_simplify(expr_ptr::Ptr{Cvoid}, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    expr_str = _giac_expr_to_string(expr_ptr)
-    return _giac_eval_string("simplify($expr_str)", ctx_ptr)
-end
-
-function _giac_solve(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid}, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    expr_str = _giac_expr_to_string(expr_ptr)
-    var_str = _giac_expr_to_string(var_ptr)
-    return _giac_eval_string("solve($expr_str, $var_str)", ctx_ptr)
-end
-
 function _giac_gcd(a_ptr::Ptr{Cvoid}, b_ptr::Ptr{Cvoid}, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
     a_str = _giac_expr_to_string(a_ptr)
     b_str = _giac_expr_to_string(b_ptr)
@@ -614,21 +492,6 @@ end
 # Matrix operations - use string-based GIAC evaluation
 # ============================================================================
 
-function _giac_det(m_ptr::Ptr{Cvoid}, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    m_str = _giac_expr_to_string(m_ptr)
-    return _giac_eval_string("det($m_str)", ctx_ptr)
-end
-
-function _giac_inv_matrix(m_ptr::Ptr{Cvoid}, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    m_str = _giac_expr_to_string(m_ptr)
-    return _giac_eval_string("inv($m_str)", ctx_ptr)
-end
-
-function _giac_trace(m_ptr::Ptr{Cvoid}, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    m_str = _giac_expr_to_string(m_ptr)
-    return _giac_eval_string("trace($m_str)", ctx_ptr)
-end
-
 function _giac_matrix_mul(a_ptr::Ptr{Cvoid}, b_ptr::Ptr{Cvoid}, ctx_ptr::Ptr{Cvoid})::Ptr{Cvoid}
     a_str = _giac_expr_to_string(a_ptr)
     b_str = _giac_expr_to_string(b_ptr)
@@ -682,48 +545,6 @@ function _giac_matrix_getindex(ptr::Ptr{Cvoid}, i::Int, j::Int)::Ptr{Cvoid}
     m_str = _giac_expr_to_string(ptr)
     # GIAC uses 0-based indexing, but we receive 0-based indices from Julia (already adjusted)
     return _giac_eval_string("($m_str)[$i][$j]", C_NULL)
-end
-
-# ============================================================================
-# Simplified wrappers that use DEFAULT_CONTEXT
-# These are convenience functions used by api.jl and operators.jl
-# ============================================================================
-
-function _giac_diff(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid}, n::Int)::Ptr{Cvoid}
-    return _giac_diff(expr_ptr, var_ptr, n, DEFAULT_CONTEXT[].ptr)
-end
-
-function _giac_integrate(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    return _giac_integrate(expr_ptr, var_ptr, DEFAULT_CONTEXT[].ptr)
-end
-
-function _giac_integrate_definite(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid},
-                                   a_ptr::Ptr{Cvoid}, b_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    return _giac_integrate_definite(expr_ptr, var_ptr, a_ptr, b_ptr, DEFAULT_CONTEXT[].ptr)
-end
-
-function _giac_limit(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid}, point_ptr::Ptr{Cvoid}, dir::Int)::Ptr{Cvoid}
-    return _giac_limit(expr_ptr, var_ptr, point_ptr, dir, DEFAULT_CONTEXT[].ptr)
-end
-
-function _giac_series(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid}, point_ptr::Ptr{Cvoid}, order::Int)::Ptr{Cvoid}
-    return _giac_series(expr_ptr, var_ptr, point_ptr, order, DEFAULT_CONTEXT[].ptr)
-end
-
-function _giac_factor(expr_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    return _giac_factor(expr_ptr, DEFAULT_CONTEXT[].ptr)
-end
-
-function _giac_expand(expr_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    return _giac_expand(expr_ptr, DEFAULT_CONTEXT[].ptr)
-end
-
-function _giac_simplify(expr_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    return _giac_simplify(expr_ptr, DEFAULT_CONTEXT[].ptr)
-end
-
-function _giac_solve(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid})::Ptr{Cvoid}
-    return _giac_solve(expr_ptr, var_ptr, DEFAULT_CONTEXT[].ptr)
 end
 
 function _giac_gcd(a_ptr::Ptr{Cvoid}, b_ptr::Ptr{Cvoid})::Ptr{Cvoid}
@@ -792,50 +613,6 @@ end
 
 function _giac_create_matrix(expr::String, rows::Int, cols::Int)::Ptr{Cvoid}
     return _giac_create_matrix(expr, rows, cols, DEFAULT_CONTEXT[].ptr)
-end
-
-# ============================================================================
-# Generic Dispatch via C++ apply_func (Tier 2)
-# These use the new C++ apply_func* functions for better performance than
-# string concatenation and evaluation.
-# ============================================================================
-
-"""
-    _apply_func_generic(name::String, args::Vector{String}) -> Ptr{Cvoid}
-
-Call a GIAC function by name using the C++ generic dispatch mechanism.
-Falls back to string evaluation if the Gen-based approach fails.
-"""
-function _apply_func_generic(name::String, args::Vector{String})::Ptr{Cvoid}
-    try
-        # Convert string args to Gen objects
-        gen_args = [GiacCxxBindings.giac_eval(arg) for arg in args]
-
-        # Call appropriate apply_func based on arity
-        result_gen = if length(gen_args) == 0
-            GiacCxxBindings.apply_func0(name)
-        elseif length(gen_args) == 1
-            GiacCxxBindings.apply_func1(name, gen_args[1])
-        elseif length(gen_args) == 2
-            GiacCxxBindings.apply_func2(name, gen_args[1], gen_args[2])
-        elseif length(gen_args) == 3
-            GiacCxxBindings.apply_func3(name, gen_args[1], gen_args[2], gen_args[3])
-        else
-            # N>3 args: use apply_funcN with StdVector
-            std_vec = GiacCxxBindings.StdVector{GiacCxxBindings.Gen}()
-            for g in gen_args
-                push!(std_vec, g)
-            end
-            GiacCxxBindings.apply_funcN(name, std_vec)
-        end
-
-        return _make_gen_ptr(result_gen)
-    catch e
-        # Fall back to string evaluation on error
-        @debug "apply_func failed, falling back to string eval: $e"
-        cmd_string = name * "(" * join(args, ",") * ")"
-        return _giac_eval_string(cmd_string, C_NULL)
-    end
 end
 
 # ============================================================================
