@@ -250,8 +250,7 @@ function _gen_tree_to_symbolics(gen, var_cache::Dict{String, Num})
         im_gen = Giac.GiacCxxBindings.cplx_im(gen)
         re_sym = _gen_tree_to_symbolics(re_gen, var_cache)
         im_sym = _gen_tree_to_symbolics(im_gen, var_cache)
-        # Don't wrap in Num (causes ambiguity error with Complex{Num})
-        return Symbolics.unwrap(re_sym) + Symbolics.unwrap(im_sym) * im
+        return re_sym + im_sym * im
 
     elseif t == Giac.GenTypes.IDNT
         name = String(Giac.GiacCxxBindings.idnt_name(gen))
@@ -280,16 +279,27 @@ function _gen_tree_to_symbolics(gen, var_cache::Dict{String, Num})
             [feuille]
         end
 
-        # Recursively convert arguments
-        converted_args = [_gen_tree_to_symbolics(a, var_cache) for a in args]
+        # Recursively convert arguments — ensure all are Num for consistent arithmetic
+        converted_args = map(args) do a
+            result = _gen_tree_to_symbolics(a, var_cache)
+            result isa Num ? result : Symbolics.wrap(result)
+        end
 
-        # Handle operators - use Symbolics.term() for * and ^ to preserve factored structure
-        if op == "*" || op == "^"
-            julia_op = _get_julia_function(op)
+        # Handle operators - use Symbolics.term() for * and ^ to preserve symbolic structure
+        # (e.g., sqrt(2) stays symbolic instead of evaluating to 1.414...)
+        if op == "*"
             unwrapped = [Symbolics.unwrap(a) for a in converted_args]
-            return Symbolics.wrap(Symbolics.term(julia_op, unwrapped...))
+            # Pairwise term() to avoid 3+ arg term() which breaks Symbolics.wrap()
+            result = unwrapped[1]
+            for i in 2:length(unwrapped)
+                result = Symbolics.term(*, result, unwrapped[i])
+            end
+            return Symbolics.wrap(result)
+        elseif op == "^"
+            unwrapped = [Symbolics.unwrap(a) for a in converted_args]
+            return Symbolics.wrap(Symbolics.term(^, unwrapped...))
         elseif op == "+"
-            return sum(converted_args)
+            return reduce(+, converted_args)
         elseif op == "-"
             if length(converted_args) == 1
                 return -converted_args[1]
@@ -299,7 +309,7 @@ function _gen_tree_to_symbolics(gen, var_cache::Dict{String, Num})
         elseif op == "/"
             return converted_args[1] / converted_args[2]
         else
-            # Try to resolve as a Julia function
+            # Try to resolve as a Julia function — use term() to preserve symbolic form
             julia_func = _get_julia_function(op)
             if julia_func !== nothing
                 unwrapped = [Symbolics.unwrap(a) for a in converted_args]

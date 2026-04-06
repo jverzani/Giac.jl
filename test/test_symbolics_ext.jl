@@ -29,9 +29,7 @@ using Symbolics.SymbolicUtils: Term
         @testset "T010: factor(x^8-1) preserves sqrt(2)" begin
             result = giac_eval("factor(x^8-1)")
             sym = to_symbolics(result)
-            # to_symbolics returns BasicSymbolic{SymReal} for complex expressions,
-            # not Num. Needs wrapping fix in to_symbolics.
-            @test_broken sym isa Num
+            @test sym isa Num
             # The expression should be preserved symbolically
             @test Symbolics.unwrap(sym) !== nothing
         end
