@@ -619,13 +619,9 @@ mutable struct GiacContext
     lock::ReentrantLock
 
     function GiacContext()
-        ptr = _giac_create_context()
-        @info "GiacContext: ptr=$ptr C_NULL=$C_NULL equal=$(ptr == C_NULL)"
-        if ptr == C_NULL
-            throw(GiacError("Failed to create GIAC context", :memory))
-        end
-        obj = new(ptr, ReentrantLock())
-        finalizer(_finalize_giaccontext, obj)
+        # Use a sentinel pointer — the real C++ context is managed
+        # lazily by _get_cxxwrap_context() in wrapper.jl
+        obj = new(Ptr{Cvoid}(1), ReentrantLock())
         return obj
     end
 
