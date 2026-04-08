@@ -432,6 +432,16 @@ function _gen_to_mathjson(gen)::AbstractMathJSONExpr
             end
         end
 
+        # Handle inv(x) -> Power(x, -1) for scalars, Inverse(x) for matrices
+        if op_name == "inv" && length(args_mathjson) == 1
+            arg = args_mathjson[1]
+            if arg isa FunctionExpr && arg.operator == :List
+                return FunctionExpr(:Inverse, args_mathjson)
+            else
+                return FunctionExpr(:Power, AbstractMathJSONExpr[arg, NumberExpr(-1)])
+            end
+        end
+
         # Look up operator mapping
         mathjson_op = get(GIAC_TO_MATHJSON, op_name, nothing)
         if mathjson_op !== nothing
