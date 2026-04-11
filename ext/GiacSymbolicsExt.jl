@@ -7,7 +7,7 @@ module GiacSymbolicsExt
 using Giac
 using Symbolics
 using CxxWrap: StdVector
-import Symbolics.SymbolicUtils: Sym, symtype, issym, iscall, operation, arguments
+import Symbolics.SymbolicUtils: Sym, symtype, issym, iscall, operation, arguments, is_literal_number, unwrap_const
 
 # ============================================================================
 # GIAC to Julia Name Mapping
@@ -184,6 +184,11 @@ function _convert_to_gen(expr)
         return Giac.GiacCxxBindings.make_complex(re_gen, im_gen)
     end
 
+    # Handle symbolic literal numbers (e.g., integer exponents in Symbolics v7)
+    if is_literal_number(unwrapped)
+        return _convert_to_gen(unwrap_const(unwrapped))
+    end
+
     # Handle symbolic variables (identifiers)
     if issym(unwrapped)
         name = String(Symbolics.tosymbol(unwrapped))
@@ -207,9 +212,9 @@ function _convert_to_gen(expr)
     end
 
     # Handle special constants
-    if unwrapped === π || unwrapped == Base.MathConstants.pi
+    if unwrapped === π || unwrapped === Base.MathConstants.pi
         return Giac.GiacCxxBindings.make_identifier("pi")
-    elseif unwrapped === ℯ || unwrapped == Base.MathConstants.e
+    elseif unwrapped === ℯ || unwrapped === Base.MathConstants.e
         return Giac.GiacCxxBindings.make_identifier("e")
     elseif unwrapped === im
         return Giac.GiacCxxBindings.make_identifier("i")
