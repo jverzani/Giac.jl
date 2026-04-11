@@ -176,6 +176,23 @@ poly = x^2 + 2*x + 1
 giac_poly = to_giac(poly)
 # Result: "1+x^2+2*x"
 
+# Power expressions work correctly
+squared = to_giac(x^2)
+# Result: "x^2"
+
+cubed = to_giac(x^3)
+# Result: "x^3"
+
+sum_of_squares = to_giac(x^2 + y^2)
+# Result: "x^2+y^2"
+
+# Compound expressions with powers
+compound = to_giac(sin(x)^2)
+# Result: "sin(x)^2"
+
+product = to_giac(x^2 * y)
+# Result: "x^2*y"
+
 # Mathematical functions are mapped correctly
 expr = sin(x) + cos(y)
 giac_expr = to_giac(expr)

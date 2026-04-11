@@ -341,4 +341,90 @@ using Symbolics.SymbolicUtils: Term
         end
     end
 
+    # ============================================================================
+    # Feature 063: Fix TypeError when converting power expressions (issue #1)
+    # ============================================================================
+    @testset "Feature 063: to_giac power expressions" begin
+        @variables a x y
+
+        # US1: Basic power expressions
+        @testset "US1: to_giac(a^2) — issue #1 reproducer" begin
+            result = to_giac(a^2)
+            @test result isa GiacExpr
+            @test occursin("a", string(result))
+            @test occursin("^", string(result)) || occursin("2", string(result))
+        end
+
+        @testset "US1: to_giac(x^3) — other integer exponents" begin
+            result = to_giac(x^3)
+            @test result isa GiacExpr
+            @test occursin("x", string(result))
+        end
+
+        @testset "US1: to_giac(x^2 + y^2) — sum of squares" begin
+            result = to_giac(x^2 + y^2)
+            @test result isa GiacExpr
+            result_str = string(result)
+            @test occursin("x", result_str)
+            @test occursin("y", result_str)
+        end
+
+        # US2: Compound expressions
+        @testset "US2: to_giac(sin(x)^2) — function with power" begin
+            result = to_giac(sin(x)^2)
+            @test result isa GiacExpr
+            result_str = string(result)
+            @test occursin("sin", result_str)
+        end
+
+        @testset "US2: to_giac(x^2 * y) — power with multiplication" begin
+            result = to_giac(x^2 * y)
+            @test result isa GiacExpr
+            result_str = string(result)
+            @test occursin("x", result_str)
+            @test occursin("y", result_str)
+        end
+
+        @testset "US2: to_giac((x + y)^2) — power of sum" begin
+            result = to_giac((x + y)^2)
+            @test result isa GiacExpr
+            result_str = string(result)
+            @test occursin("x", result_str)
+            @test occursin("y", result_str)
+        end
+
+        # US2: Edge cases
+        @testset "US2: edge cases — a^0, a^(-1), a^b" begin
+            @variables b
+
+            result_zero = to_giac(a^0)
+            @test result_zero isa GiacExpr
+
+            result_neg = to_giac(a^(-1))
+            @test result_neg isa GiacExpr
+
+            result_sym = to_giac(a^b)
+            @test result_sym isa GiacExpr
+            result_str = string(result_sym)
+            @test occursin("a", result_str)
+            @test occursin("b", result_str)
+        end
+
+        # US3: Roundtrip conversion
+        @testset "US3: roundtrip to_symbolics(to_giac(a^2))" begin
+            original = a^2
+            roundtrip = to_symbolics(to_giac(original))
+            @test roundtrip isa Num
+            # Verify mathematical equivalence by substituting a value
+            @test Symbolics.substitute(roundtrip, Dict(a => 3)) == Symbolics.substitute(original, Dict(a => 3))
+        end
+
+        @testset "US3: roundtrip to_symbolics(to_giac(x^2 + y))" begin
+            original = x^2 + y
+            roundtrip = to_symbolics(to_giac(original))
+            @test roundtrip isa Num
+            @test Symbolics.substitute(roundtrip, Dict(x => 2, y => 5)) == Symbolics.substitute(original, Dict(x => 2, y => 5))
+        end
+    end
+
 end  # @testset "Symbolics Extension"
