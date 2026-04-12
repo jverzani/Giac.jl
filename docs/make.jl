@@ -24,6 +24,7 @@ makedocs(
         "Variable Substitution" => "substitute.md",
         "Creating Julia Functions" => "julia_functions.md",
         "Using with Pluto reactive notebooks" => "pluto.md",
+        "Using icas (Giac C++ REPL)" => "icas.md",
         "Mathematics" => [
             "Algebra" => "mathematics/algebra.md",
             "Calculus" => "mathematics/calculus.md",
