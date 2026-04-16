@@ -1,4 +1,4 @@
-# Symbolic Variables
+# Symbolic variables
 
 ## Simple Variable Creation
 
