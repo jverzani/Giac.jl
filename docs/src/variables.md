@@ -111,3 +111,19 @@ purge(x)
     Julia's chained comparison syntax `0 < x < 10` does not work because Julia
     desugars it using `&&` (which cannot be overloaded). Use `(x > 0) & (x < 10)`
     or `assume` + `additionally` instead.
+
+!!! warning
+    When a variable already has an assumption, GIAC evaluates comparisons involving
+    that variable to `true` or `false` instead of keeping them symbolic. This means
+    calling `assume` a second time without `purge` first will fail:
+
+    ```julia
+    assume(x > 0)
+    additionally(x < 10)
+    # x > 0 now evaluates to "true" (GIAC knows x is positive)
+    assume(x > 0)  # ERROR: assume(true) is invalid
+
+    # Fix: always purge before re-assuming
+    purge(x)
+    assume(x > 0)  # Works
+    ```
