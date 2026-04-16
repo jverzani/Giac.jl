@@ -53,3 +53,61 @@ for v in vars
     println(v)
 end
 ```
+
+## Symbolic Comparisons and Inequalities
+
+The comparison operators `<`, `>`, `<=`, `>=` return symbolic inequality expressions
+(`GiacExpr`), not booleans. This enables natural syntax for building constraints:
+
+```julia
+using Giac
+
+@giac_var x y
+
+# Build symbolic inequalities
+x > 0        # Returns a GiacExpr representing x>0
+x < y        # Returns a GiacExpr representing x<y
+x >= 1//2    # Works with Rational
+x <= π       # Works with Irrational
+```
+
+Combine inequalities with `&` (and) and `|` (or):
+
+```julia
+(x > 0) & (x < 10)    # GIAC "and" expression
+(x < -1) | (x > 1)    # GIAC "or" expression
+```
+
+## Assumptions on Variables
+
+Use `assume` and `additionally` to declare constraints on symbolic variables.
+Subsequent computations will respect these assumptions:
+
+```julia
+using Giac
+using Giac.Commands: assume, about, sign, purge, additionally, sqrt
+
+@giac_var x
+
+# Declare x as positive
+assume(x > 0)
+sign(x)      # Returns 1
+sqrt(x^2)    # Returns x (simplified thanks to assumption)
+
+# Interval constraint using &
+assume((x > 0) & (x < 10))
+about(x)     # Shows interval [0, 10]
+
+# Or use assume + additionally
+assume(x > -1)
+additionally(x < 1)
+about(x)     # Shows interval [-1, 1]
+
+# Clear assumptions
+purge(x)
+```
+
+!!! note
+    Julia's chained comparison syntax `0 < x < 10` does not work because Julia
+    desugars it using `&&` (which cannot be overloaded). Use `(x > 0) & (x < 10)`
+    or `assume` + `additionally` instead.

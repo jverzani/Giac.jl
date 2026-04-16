@@ -155,6 +155,136 @@ function Base.hash(expr::GiacExpr, h::UInt)::UInt
 end
 
 # =============================================================================
+# Symbolic Comparison Operators (064-symbolic-comparison-operators)
+# =============================================================================
+# These operators return GiacExpr (symbolic inequalities), NOT Bool.
+# This enables natural syntax like: assume(x > 0), additionally(x < 10)
+# Note: isless is intentionally NOT overridden to preserve sort/min/max semantics.
+
+"""
+    <(a::GiacExpr, b::GiacExpr) -> GiacExpr
+
+Create a symbolic less-than inequality from two GIAC expressions.
+
+Returns a `GiacExpr` representing the inequality (not a `Bool`).
+
+# Examples
+```julia
+@giac_var x y
+ineq = x < y           # Creates symbolic inequality x<y
+assume(x < giac_eval("10"))  # Use with assume
+```
+"""
+function Base.:<(a::GiacExpr, b::GiacExpr)::GiacExpr
+    return giac_eval("$(string(a))<$(string(b))")
+end
+
+"""
+    >(a::GiacExpr, b::GiacExpr) -> GiacExpr
+
+Create a symbolic greater-than inequality from two GIAC expressions.
+
+Returns a `GiacExpr` representing the inequality (not a `Bool`).
+
+# Examples
+```julia
+@giac_var x y
+ineq = x > y           # Creates symbolic inequality x>y
+assume(x > giac_eval("0"))   # Assume x is positive
+```
+"""
+function Base.:>(a::GiacExpr, b::GiacExpr)::GiacExpr
+    return giac_eval("$(string(a))>$(string(b))")
+end
+
+"""
+    <=(a::GiacExpr, b::GiacExpr) -> GiacExpr
+
+Create a symbolic less-than-or-equal inequality from two GIAC expressions.
+
+Returns a `GiacExpr` representing the inequality (not a `Bool`).
+
+# Examples
+```julia
+@giac_var x y
+ineq = x <= y           # Creates symbolic inequality x<=y
+```
+"""
+function Base.:<=(a::GiacExpr, b::GiacExpr)::GiacExpr
+    return giac_eval("$(string(a))<=$(string(b))")
+end
+
+"""
+    >=(a::GiacExpr, b::GiacExpr) -> GiacExpr
+
+Create a symbolic greater-than-or-equal inequality from two GIAC expressions.
+
+Returns a `GiacExpr` representing the inequality (not a `Bool`).
+
+# Examples
+```julia
+@giac_var x y
+ineq = x >= y           # Creates symbolic inequality x>=y
+```
+"""
+function Base.:>=(a::GiacExpr, b::GiacExpr)::GiacExpr
+    return giac_eval("$(string(a))>=$(string(b))")
+end
+
+# Mixed-type comparisons (GiacExpr with Julia numbers)
+Base.:<(a::GiacExpr, b::Number) = a < convert(GiacExpr, b)
+Base.:<(a::Number, b::GiacExpr) = convert(GiacExpr, a) < b
+
+Base.:>(a::GiacExpr, b::Number) = a > convert(GiacExpr, b)
+Base.:>(a::Number, b::GiacExpr) = convert(GiacExpr, a) > b
+
+Base.:<=(a::GiacExpr, b::Number) = a <= convert(GiacExpr, b)
+Base.:<=(a::Number, b::GiacExpr) = convert(GiacExpr, a) <= b
+
+Base.:>=(a::GiacExpr, b::Number) = a >= convert(GiacExpr, b)
+Base.:>=(a::Number, b::GiacExpr) = convert(GiacExpr, a) >= b
+
+# =============================================================================
+# Symbolic Logical Operators (064-symbolic-comparison-operators)
+# =============================================================================
+# These operators combine symbolic inequalities using GIAC's `and`/`or`.
+# Primary use case: assume((x > 0) & (x < 10)) for interval constraints.
+# Note: Julia's && and || cannot be overloaded (short-circuit operators),
+# so we use & and | (bitwise operators) instead.
+
+"""
+    &(a::GiacExpr, b::GiacExpr) -> GiacExpr
+
+Combine two symbolic expressions with GIAC's logical `and`.
+
+This enables interval constraints with `assume`:
+
+# Examples
+```julia
+@giac_var x
+assume((x > 0) & (x < 10))   # x in (0, 10)
+```
+"""
+function Base.:&(a::GiacExpr, b::GiacExpr)::GiacExpr
+    return giac_eval("($(string(a))) and ($(string(b)))")
+end
+
+"""
+    |(a::GiacExpr, b::GiacExpr) -> GiacExpr
+
+Combine two symbolic expressions with GIAC's logical `or`.
+
+# Examples
+```julia
+@giac_var x
+expr = (x < -1) | (x > 1)   # x outside [-1, 1]
+```
+"""
+function Base.:|(a::GiacExpr, b::GiacExpr)::GiacExpr
+    return giac_eval("($(string(a))) or ($(string(b)))")
+end
+
+# =============================================================================
 # Matrix Operators
 # =============================================================================
 

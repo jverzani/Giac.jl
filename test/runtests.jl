@@ -50,6 +50,9 @@ using LinearAlgebra
     # Equation syntax tests (024-equation-syntax)
     include("test_equation_syntax.jl")
 
+    # Comparison operators tests (064-symbolic-comparison-operators)
+    include("test_comparison_operators.jl")
+
     # Tables.jl compatibility tests (025-tables-compatibility)
     include("test_tables.jl")
 
