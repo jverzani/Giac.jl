@@ -15,11 +15,11 @@ M = GiacMatrix([1 2; 3 4])  # Matrices render as LaTeX too
 
 This works because Giac.jl implements `Base.show(io, ::MIME"text/latex", expr)` which calls Giac's native `latex` command.
 
-A demo notebook is available at `examples/latex_demo.jl`:
+A demo notebook is available at `examples/02_latex.jl`:
 
 ```julia
 using Pluto
-Pluto.run(notebook="examples/latex_demo.jl")
+Pluto.run(notebook="examples/02_latex.jl")
 ```
 
 See screenshots:
