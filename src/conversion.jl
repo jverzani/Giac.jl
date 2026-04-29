@@ -98,9 +98,9 @@ function _convert_by_type(g::GiacExpr, t::T)
 end
 
 """
-    unwrap_const([T], ex::GiacExpr) -> Number
+    unwrap_const(ex::GiacExpr) -> Number
 
-Unwraps a symbolic expression and returns a number (possibly with the specified type) when the expression has no symbolic variables.
+Unwraps a symbolic expression and returns a number when the expression has no symbolic variables.
 
 
 """
