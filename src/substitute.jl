@@ -116,6 +116,13 @@ substitute(x + 1, x => 5)  # Returns: 6
 function substitute(expr::GiacExpr, pair::Pair{<:GiacExpr})::GiacExpr
     return substitute(expr, Dict(pair))
 end
+function substitute(expr::GiacExpr, pairs::Pair{<:GiacExpr}...)::GiacExpr
+    for p ∈ pairs
+        expr = substitute(expr, p)
+    end
+    expr
+end
+
 
 # ============================================================================
 # GiacMatrix Support: Element-wise Substitution

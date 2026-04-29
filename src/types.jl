@@ -298,6 +298,20 @@ function (expr::GiacExpr)(args...)
     return giac_eval(call_str)
 end
 
+"""
+    (expr::GiacExpr)(pairs::Pair{<:GiacExpr}...) -> GiacExpr
+
+Uses call syntax for `substitute` when arguments are pairs.
+
+# Examples
+```julia
+@giac_var a b c d t
+expr = a*sin(b*t + c) + d
+expr(a=>15, b=>10, c=>5, d=>0) # 15*sin(10*t+5)
+```
+"""
+(expr::GiacExpr)(pairs::Pair{<:GiacExpr}...)::GiacExpr = substitute(expr, pairs...)
+
 # ============================================================================
 # Derivative Operator D (035-derivative-operator)
 # ============================================================================
