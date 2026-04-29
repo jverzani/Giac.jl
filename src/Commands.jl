@@ -62,6 +62,8 @@ using ..Giac: GiacExpr, GiacMatrix, GiacInput, GiacError, giac_eval, with_giac_l
               HeldCmd
 import LinearAlgebra
 
+import CommonSolve: solve
+
 # ============================================================================
 # Core Command Invocation (invoke_cmd)
 # ============================================================================
