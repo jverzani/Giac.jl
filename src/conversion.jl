@@ -97,6 +97,22 @@ function _convert_by_type(g::GiacExpr, t::T)
     end
 end
 
+"""
+    unwrap_const([T], ex::GiacExpr) -> Number
+
+Unwraps a symbolic expression and returns a number (possibly with the specified type) when the expression has no symbolic variables.
+
+
+"""
+function unwrap_constant(ex::GiacExpr)
+    out = to_julia(ex)
+    isa(out, Number) && return out
+    if is_constant(ex)
+        return to_julia(Commands.evalf(ex))
+    end
+    return ex
+end
+
 # ============================================================================
 # Scalar Conversion Helpers
 # ============================================================================

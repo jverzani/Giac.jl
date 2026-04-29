@@ -198,4 +198,10 @@ function _init_constants()
     _i[] = giac_eval("i")
 end
 
+# is a constant
+function is_giac_constant(expr::GiacExpr)::Bool
+    expr == giac_eval("pi") || expr == giac_eval("e") || expr == giac_eval("i")
+end
+
+
 end # module Constants
