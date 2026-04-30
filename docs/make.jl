@@ -4,8 +4,11 @@ using Giac
 # Note: Giac.Commands is not imported here because it has ~2000 auto-generated
 # command functions. Their usage is documented in commands_submodule.md.
 
+DocMeta.setdocmeta!(Giac, :DocTestSetup, :(using Giac); recursive=true)
+
 makedocs(
     sitename = "Giac.jl",
+    doctest = true,
     # Note: Giac.Commands is excluded from modules because it has ~2000 auto-generated
     # command functions that aren't individually documented (usage is documented in
     # commands_submodule.md instead)

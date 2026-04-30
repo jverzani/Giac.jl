@@ -32,31 +32,21 @@ Note: GIAC represents booleans as integers internally, but `to_julia` detects th
 via their string representation ("true"/"false") and returns Julia `Bool` values.
 
 # Examples
-```julia
-# Boolean conversion
-to_julia(giac_eval("true"))      # true::Bool
-to_julia(giac_eval("false"))     # false::Bool
-to_julia(giac_eval("1==1"))      # true::Bool (comparison result)
+```jldoctest
+julia> to_julia(giac_eval("42"))
+42
 
-# Integer conversion (distinct from booleans)
-to_julia(giac_eval("1"))         # Int64(1)
-to_julia(giac_eval("0"))         # Int64(0)
-to_julia(giac_eval("42"))        # Int64(42)
+julia> to_julia(giac_eval("3/4"))
+3//4
 
-# Float conversion
-to_julia(giac_eval("3.14"))      # Float64(3.14)
+julia> to_julia(giac_eval("[1,2,3]"))
+3-element Vector{Int64}:
+ 1
+ 2
+ 3
 
-# Rational conversion
-to_julia(giac_eval("3/4"))       # 3//4
-
-# Complex conversion
-to_julia(giac_eval("3+4*i"))     # 3.0 + 4.0im
-
-# Vector conversion with type narrowing
-to_julia(giac_eval("[1, 2, 3]")) # [1, 2, 3]::Vector{Int64}
-
-# Symbolic expressions are unchanged
-to_julia(giac_eval("x + 1"))     # GiacExpr (unchanged)
+julia> to_julia(giac_eval("true"))
+true
 ```
 
 # See also

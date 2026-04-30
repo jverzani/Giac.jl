@@ -17,14 +17,16 @@ Evaluate a GIAC expression string and return a GiacExpr.
 - `GiacError(:parse)`: If the expression cannot be parsed
 - `GiacError(:eval)`: If evaluation fails
 
-# Example
-```julia
-result = giac_eval("2 + 3")
-println(result)  # 5
+# Examples
+```jldoctest
+julia> giac_eval("2+3")
+GiacExpr: 5
 
-# Symbolic computation
-expr = giac_eval("diff(x^2, x)")
-println(expr)  # 2*x
+julia> giac_eval("diff(x^2, x)")
+GiacExpr: 2*x
+
+julia> giac_eval("factor(x^2-1)")
+GiacExpr: (x-1)*(x+1)
 ```
 """
 function giac_eval(expr::String, ctx::GiacContext=DEFAULT_CONTEXT[])::GiacExpr

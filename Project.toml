@@ -25,6 +25,7 @@ Aqua = "0.8"
 CSV = "0.10"
 CxxWrap = "0.16, 0.17"
 DataFrames = "1.6, 1.7, 1.8"
+Documenter = "1"
 GIAC_jll = "2"
 Libdl = "1.10"
 LinearAlgebra = "1.10"
@@ -40,9 +41,10 @@ libgiac_julia_jll = "0.5"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 MathJSON = "77215b4b-6f01-425c-beac-950ae6536d4d"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Aqua", "Symbolics", "MathJSON", "DataFrames", "CSV"]
+test = ["Test", "Aqua", "Documenter", "Symbolics", "MathJSON", "DataFrames", "CSV"]
