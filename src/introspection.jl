@@ -573,7 +573,7 @@ function operation(g::GiacExpr)
     hasproperty(Giac, fn) && return getproperty(Giac, fn)
     hasproperty(Base, fn) && return getproperty(Base, fn)
     hasproperty(LinearAlgebra, fn) && return getproperty(LinearAlgebra, fn)
-    throw(ArgumentError("Can not locate $fn"))
+    throw(ArgumentError("Cannot locate function `$fn` in Giac.Commands, Giac, Base, or LinearAlgebra"))
 end
 
 function arguments(g::GiacExpr)::Vector{GiacExpr}
