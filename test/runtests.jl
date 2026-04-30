@@ -140,6 +140,12 @@ using LinearAlgebra
     # Verifies bidirectional conversion between GiacExpr and MathJSON types
     # ============================================================================
     include("test_mathjson_conversion.jl")
+
+    # ============================================================================
+    # Doctests
+    # Runs jldoctest blocks in Giac docstrings via Documenter.doctest
+    # ============================================================================
+    include("test_doctests.jl")
 end
 
 # Aqua.jl package quality tests

@@ -61,12 +61,16 @@ expression is not modified.
 - `GiacExpr`: New expression with substitutions applied
 
 # Examples
-```julia
-@giac_var x y
-expr = x^2 + y
-substitute(expr, Dict(x => 2))        # Returns: 4 + y
-substitute(expr, Dict(x => 2, y => 3)) # Returns: 7
-substitute(expr, Dict(x => y, y => x)) # Swaps x and y: y^2 + x
+```jldoctest
+julia> @giac_var x y;
+
+julia> expr = x^2 + y;
+
+julia> string(substitute(expr, Dict(x => 2)))
+"4+y"
+
+julia> string(substitute(expr, Dict(x => 2, y => 3)))
+"7"
 ```
 
 # See also
