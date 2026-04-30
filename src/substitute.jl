@@ -105,9 +105,17 @@ Substitute a single variable using Pair syntax.
 Convenience method equivalent to `substitute(expr, Dict(pair))`.
 
 # Examples
-```julia
-@giac_var x
-substitute(x + 1, x => 5)  # Returns: 6
+```jldoctest substitute
+julia> using Giac
+
+julia> @giac_var a b c x v₀ θ
+(a, b, c, x, v₀, θ)
+
+julia> substitute(a*x^2 + b*x + c, a => -32//2)
+GiacExpr: -16*x^2+b*x+c
+
+julia> substitute(a*x^2 + b*x + c, a => -32//2, b => v₀*cos(θ), c=>0)
+GiacExpr: -16*x^2+v₀*cos(θ)*x
 ```
 
 # See also
