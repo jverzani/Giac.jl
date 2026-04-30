@@ -104,7 +104,7 @@ Unwraps a symbolic expression and returns a number when the expression has no sy
 
 
 """
-function unwrap_constant(ex::GiacExpr)
+function unwrap_const(ex::GiacExpr)
     out = to_julia(ex)
     isa(out, Number) && return out
     if is_constant(ex)

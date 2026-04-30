@@ -199,8 +199,14 @@ function _init_constants()
 end
 
 # is a constant
+"""
+    is_giac_constant(expr::Giac_Eval) -> Bool
+
+Is expression one of the defined constants.
+
+"""
 function is_giac_constant(expr::GiacExpr)::Bool
-    expr == giac_eval("pi") || expr == giac_eval("e") || expr == giac_eval("i")
+    any(c -> expr == giac_eval(c), ("pi", "e", "i"))
 end
 
 
