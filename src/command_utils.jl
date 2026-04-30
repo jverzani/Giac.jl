@@ -128,6 +128,10 @@ function _arg_to_giac_string(arg::DerivativePoint)::String
     return string(arg)
 end
 
+function _arg_to_giac_string(arg::Function)::String
+    string(nameof(arg))
+end
+
 function _arg_to_giac_string(arg)
     throw(ArgumentError("Cannot convert $(typeof(arg)) to GIAC string representation"))
 end

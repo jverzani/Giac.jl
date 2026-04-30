@@ -2,7 +2,7 @@
 # Verifies all code examples in docs/src/mathematics/algebra.md work correctly
 
 @testset "Documentation Examples: Algebra" begin
-    using Giac.Commands: factor, expand, simplify, solve, gcd, lcm, quo, rem
+    using Giac.Commands: factor, expand, simplify, solve, gcd, lcm, quo, rem, combine
 
     @testset "Polynomial Factorization" begin
         @giac_var x
@@ -25,6 +25,14 @@
 
         @test string(simplify((x^2-1)/(x-1))) == "x+1"
         @test string(simplify((x^3-x)/(x^2-1))) == "x"
+    end
+
+    @testset "Combine" begin
+        @giac_var x
+        @test combine(log(x) + 2log(x), log) == log(x*x^2)
+        @test combine(log(x) + 2log(x), "log") == log(x*x^2)
+        @test combine(log(x) + 2log(x), sin) == 3*log(x)
+        @test combine(log(x) + 2log(x), "sin") == 3*log(x)
     end
 
     @testset "Equation Solving" begin
@@ -58,4 +66,5 @@
         result = string(solve([x + y ~ 1, x - y ~ 0], [x, y]))
         @test contains(result, "1/2")
     end
+
 end
