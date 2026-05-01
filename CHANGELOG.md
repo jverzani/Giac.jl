@@ -38,6 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `zero` / `one` (instance and `::Type{GiacExpr}` forms). Contributed by
   [@jverzani](https://github.com/jverzani) in
   [PR #9](https://github.com/s-celles/Giac.jl/pull/9).
+- **`GiacMatrix` iteration and linear indexing**: `length(M)` returns
+  `rows * cols`; `for e in M` and `collect(M)` walk the entries in
+  column-major order (matching Julia's `Matrix` convention); `M[i]` and
+  `M[CartesianIndex(i, j)]` provide linear and Cartesian indexing; and
+  `LinearIndices(M)` / `CartesianIndices(M)` are available for converting
+  between forms. Contributed by [@jverzani](https://github.com/jverzani) in
+  [PR #10](https://github.com/s-celles/Giac.jl/pull/10).
 
 ### Changed
 
