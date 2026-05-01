@@ -19,6 +19,7 @@ using LinearAlgebra
     include("test_calculus.jl")
     include("test_algebra.jl")
     include("test_linalg.jl")
+    include("test_matrix_iteration.jl")
     include("test_memory.jl")
 
     # Command invocation tests (003-giac-commands)
