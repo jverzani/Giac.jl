@@ -16,6 +16,7 @@ using LinearAlgebra
     include("test_wrapper.jl")
     include("test_api.jl")
     include("test_operators.jl")
+    include("test_mathops.jl")
     include("test_calculus.jl")
     include("test_algebra.jl")
     include("test_linalg.jl")

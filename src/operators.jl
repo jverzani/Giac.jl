@@ -96,14 +96,18 @@ function Base.:^(a::GiacExpr, b::GiacExpr)::GiacExpr
 end
 
 """
-    ^(a::GiacExpr, n::Integer)
+    ^(a::GiacExpr, n::Number)
 
-Raise a GIAC expression to an integer power.
+Raise a GIAC expression to a power.
 """
-function Base.:^(a::GiacExpr, n::Integer)::GiacExpr
-    b = giac_eval(string(n))
-    return a^b
-end
+Base.:^(a::GiacExpr, b::Number) = ^(promote(a, b)...)
+
+"""
+    ^(a::Number, n::GiacExpr)
+
+Raise a number to a GIAC expression
+"""
+Base.:^(a::Number, b::GiacExpr) = ^(promote(a, b)...)
 
 # =============================================================================
 # Mixed-type arithmetic (GiacExpr with Julia numbers)
