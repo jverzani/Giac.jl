@@ -309,7 +309,9 @@ Compute the arc sine of a GiacExpr.
 Uses Tier 1 C++ wrapper for high performance.
 """
 Base.asin(expr::GiacExpr)::GiacExpr = _tier1_or_fallback(_giac_asin_tier1, :asin, expr)
-Base.asind(expr::GiacExpr)::GiacExpr = asin(deg2rad(expr))
+# Inverse-degree trig: takes a value in [-1, 1] (or [0, ...) for atan), returns
+# the angle in degrees. Mirrors Julia Base: asind(x) = rad2deg(asin(x)).
+Base.asind(expr::GiacExpr)::GiacExpr = rad2deg(asin(expr))
 
 """
     Base.acos(expr::GiacExpr) -> GiacExpr
@@ -318,7 +320,7 @@ Compute the arc cosine of a GiacExpr.
 Uses Tier 1 C++ wrapper for high performance.
 """
 Base.acos(expr::GiacExpr)::GiacExpr = _tier1_or_fallback(_giac_acos_tier1, :acos, expr)
-Base.acosd(expr::GiacExpr)::GiacExpr = acos(deg2rad(expr))
+Base.acosd(expr::GiacExpr)::GiacExpr = rad2deg(acos(expr))
 
 """
     Base.atan(expr::GiacExpr) -> GiacExpr
@@ -327,15 +329,16 @@ Compute the arc tangent of a GiacExpr.
 Uses Tier 1 C++ wrapper for high performance.
 """
 Base.atan(expr::GiacExpr)::GiacExpr = _tier1_or_fallback(_giac_atan_tier1, :atan, expr)
-Base.atand(expr::GiacExpr)::GiacExpr = atan(deg2rad(expr))
+Base.atand(expr::GiacExpr)::GiacExpr = rad2deg(atan(expr))
 
 Base.secd(expr::GiacExpr)::GiacExpr = sec(deg2rad(expr))
 Base.cscd(expr::GiacExpr)::GiacExpr = csc(deg2rad(expr))
 Base.cotd(expr::GiacExpr)::GiacExpr = cot(deg2rad(expr))
 
-Base.sincos(expr::GiacExpr)::GiacExpr = (sin(expr), cos(expr))
-Base.sincosd(expr::GiacExpr)::GiacExpr = (sind(expr), cosd(expr))
-Base.sincospi(expr::GiacExpr)::GiacExpr = (sinpi(expr), cospi(expr))
+# Paired trig — return a tuple of two GiacExpr (NOT a single GiacExpr).
+Base.sincos(expr::GiacExpr)::Tuple{GiacExpr, GiacExpr}    = (sin(expr), cos(expr))
+Base.sincosd(expr::GiacExpr)::Tuple{GiacExpr, GiacExpr}   = (sind(expr), cosd(expr))
+Base.sincospi(expr::GiacExpr)::Tuple{GiacExpr, GiacExpr}  = (sinpi(expr), cospi(expr))
 
 
 Base.deg2rad(expr::GiacExpr)::GiacExpr = (expr*pi) / 180
