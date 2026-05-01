@@ -292,6 +292,11 @@ Giac.is_fraction
 Giac.is_complex
 Giac.is_string
 Giac.is_boolean
+Giac.is_constant
+Giac.hasmatch
+Giac.free_symbols
+Giac.unwrap_const
+Giac.Constants.is_giac_constant
 ```
 
 ### Type Enum (GenTypes)

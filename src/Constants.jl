@@ -69,6 +69,10 @@ const _pi = Ref{GiacExpr}()
 const _e = Ref{GiacExpr}()
 const _i = Ref{GiacExpr}()
 
+# Cached tuple of (pi, e, i) used by `is_giac_constant` so the predicate
+# costs three pointer-equality comparisons instead of three giac_eval calls.
+const _giac_constants = Ref{NTuple{3, GiacExpr}}()
+
 """
     SymbolicConstant
 
@@ -194,8 +198,28 @@ Called by Giac.__init__() after GIAC library is initialized.
 """
 function _init_constants()
     _pi[] = giac_eval("pi")
-    _e[] = giac_eval("e")
-    _i[] = giac_eval("i")
+    _e[]  = giac_eval("e")
+    _i[]  = giac_eval("i")
+    _giac_constants[] = (_pi[], _e[], _i[])
 end
+
+"""
+    is_giac_constant(expr::GiacExpr) -> Bool
+
+Return `true` when `expr` is one of the symbolic constants `pi`, `e`, or `i`.
+
+# Examples
+```julia
+Giac.Constants.is_giac_constant(giac_eval("pi"))   # true
+Giac.Constants.is_giac_constant(giac_eval("e"))    # true
+Giac.Constants.is_giac_constant(giac_eval("i"))    # true
+Giac.Constants.is_giac_constant(giac_eval("x"))    # false (free variable)
+Giac.Constants.is_giac_constant(giac_eval("1"))    # false (numeric literal)
+```
+"""
+function is_giac_constant(expr::GiacExpr)::Bool
+    any(==(expr), _giac_constants[])
+end
+
 
 end # module Constants

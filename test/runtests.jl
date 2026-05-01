@@ -144,6 +144,12 @@ using LinearAlgebra
     include("test_mathjson_conversion.jl")
 
     # ============================================================================
+    # TermInterface Extension Tests (Issue #3 task 3)
+    # Verifies TermInterface.iscall / operation / arguments / maketerm dispatch
+    # ============================================================================
+    include("test_terminterface_ext.jl")
+
+    # ============================================================================
     # Doctests
     # Runs jldoctest blocks in Giac docstrings via Documenter.doctest
     # ============================================================================

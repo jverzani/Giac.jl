@@ -436,6 +436,26 @@ Base.conj(expr::GiacExpr)::GiacExpr = _tier1_or_fallback(_giac_conj_tier1, :conj
 Base.adjoint(expr::GiacExpr)::GiacExpr = conj(expr)
 
 """
+    Base.isfinite(expr::GiacExpr) -> Bool
+
+Return `true` when `expr` is not infinite. Mirrors Julia's convention for
+numeric types: equivalent to `!isinf(expr)`, with the GIAC-side `isinf`
+result converted to a Julia `Bool` via [`to_julia`](@ref). Identifiers and
+ordinary symbolic expressions are reported as finite (they are not
+recognized as `inf`).
+
+# Examples
+```julia
+isfinite(giac_eval("1"))      # true
+isfinite(giac_eval("inf"))    # false
+isfinite(giac_eval("-inf"))   # false
+isfinite(giac_eval("1/0"))    # false  (GIAC normalizes 1/0 to inf)
+isfinite(giac_eval("x"))      # true   (a free variable is finite)
+```
+"""
+Base.isfinite(expr::GiacExpr)::Bool = !to_julia(isinf(expr))::Bool
+
+"""
     Base.gcd(a::GiacExpr, b::GiacExpr) -> GiacExpr
 
 Compute the greatest common divisor of two GiacExprs.

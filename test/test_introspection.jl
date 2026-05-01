@@ -384,4 +384,74 @@
         end
     end
 
+    # ========================================================================
+    # TermInterface names
+    # ========================================================================
+    @testset "terminterface names" begin
+        @test length(Giac.arguments(giac_eval("a*b*c"))) == 3
+        @test Giac.arguments(sin(giac_eval("x"))) == [giac_eval("x")]
+
+        @test Giac.operation(giac_eval("a*b*c")) == *
+        @test Giac.operation(sin(giac_eval("x"))) == sin
+        @test Giac.operation(giac_eval("Gamma(x)")) == Giac.Commands.Gamma
+
+        @test Giac.iscall(giac_eval("x")) == false
+        @test Giac.iscall(giac_eval("pi")) == false
+        @test Giac.iscall(giac_eval("sin(x)")) == true
+
+        @test Giac.maketerm(GiacExpr, ^, (giac_eval("2"), giac_eval("3")), nothing) == 8
+    end
+
+    # ========================================================================
+    # Constant expressions
+    # ========================================================================
+    @testset "constant expressions" begin
+        @test Giac.is_constant(giac_eval("sin(pi)"))
+        @test !Giac.is_constant(giac_eval("sin(x)"))
+        @test Giac.unwrap_const(giac_eval("sin(pi/2)")) ≈ 1
+        @test Giac.unwrap_const(giac_eval("sin(x)")) == giac_eval("sin(x)")
+    end
+
+    # ========================================================================
+    # Free symbols
+    # ========================================================================
+    @testset "free symbols" begin
+        @test length(Giac.free_symbols(giac_eval("sin(2)"))) == 0
+        @test length(Giac.free_symbols(giac_eval("sin(x)"))) == 1
+        @test length(Giac.free_symbols(giac_eval("sin(pi*x)"))) == 1
+        @test length(Giac.free_symbols(giac_eval("sin(x + y)"))) == 2
+    end
+
+    # ========================================================================
+    # to_julia auto-evalf for free-variable-free expressions (Issue #3)
+    # When a symbolic expression has no free variables, to_julia reduces it
+    # numerically (via evalf) and returns a Julia number. Symbolic
+    # expressions with at least one free variable pass through unchanged.
+    # ========================================================================
+    @testset "to_julia auto-evalf (Issue #3)" begin
+        @giac_var x y
+
+        # The canonical Issue #3 case.
+        r = to_julia(substitute(sin(x), x => 2))
+        @test r isa Float64
+        @test r ≈ 0.909297426825682
+
+        # Constants reduce numerically.
+        @test to_julia(giac_eval("pi"))         isa Float64
+        @test to_julia(giac_eval("sqrt(2)"))    isa Float64
+        @test to_julia(giac_eval("sin(pi/4)"))  ≈ sqrt(2)/2
+
+        # Free-variable expressions pass through unchanged.
+        @test to_julia(x)                === x
+        @test to_julia(sin(x))           isa GiacExpr
+        @test to_julia(x + 1)            isa GiacExpr
+        @test to_julia(substitute(sin(x), y => 2)) isa GiacExpr   # x still free
+
+        # Pre-existing numeric / boolean / vector paths are untouched.
+        @test to_julia(giac_eval("42"))  === 42
+        @test to_julia(giac_eval("3/4")) === 3//4
+        @test to_julia(giac_eval("true"))
+        @test to_julia(giac_eval("[1,2,3]")) == [1, 2, 3]
+    end
+
 end

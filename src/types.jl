@@ -57,6 +57,7 @@ mutable struct GiacExpr
         return obj
     end
 end
+GiacExpr(x::GiacExpr) = x
 
 """
     _finalize_giacexpr(expr::GiacExpr)
