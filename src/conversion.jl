@@ -26,7 +26,14 @@ Recursively convert a GIAC expression to native Julia types.
 | `CPLX` | `Complex{T}` (T promoted from parts) |
 | `VECT` | `Vector{T}` (T narrowed from elements) |
 | `STRNG` | `String` |
-| `SYMB`, `IDNT`, `FUNC` | `GiacExpr` (unchanged) |
+| `SYMB`, `IDNT`, `FUNC` (with no free variables) | numeric value via `evalf` |
+| `SYMB`, `IDNT`, `FUNC` (with at least one free variable) | `GiacExpr` (unchanged) |
+
+When a symbolic expression has no free variables (i.e. [`is_constant`](@ref)
+returns `true`), `to_julia` calls `Giac.Commands.evalf` to reduce it to a
+numeric value and then recurses, so `to_julia(substitute(sin(x), x => 2))`
+returns a `Float64`, not `GiacExpr: sin(2)`. The layered design — `evalf(...)`
+keeps you in Giac, `to_julia(...)` bridges to Julia — is preserved.
 
 Note: GIAC represents booleans as integers internally, but `to_julia` detects them
 via their string representation ("true"/"false") and returns Julia `Bool` values.
@@ -50,7 +57,8 @@ true
 ```
 
 # See also
-[`giac_type`](@ref), [`is_boolean`](@ref), [`is_numeric`](@ref), [`is_vector`](@ref)
+[`giac_type`](@ref), [`is_boolean`](@ref), [`is_numeric`](@ref), [`is_vector`](@ref),
+[`is_constant`](@ref), [`unwrap_const`](@ref)
 """
 function to_julia(g::GiacExpr)
     if g.ptr == C_NULL
@@ -82,7 +90,13 @@ function _convert_by_type(g::GiacExpr, t::T)
     elseif t == STRNG
         return _convert_to_string(g)
     else
-        # Symbolic types (SYMB, IDNT, FUNC) - return unchanged
+        # Symbolic types (SYMB, IDNT, FUNC). If the expression has no free
+        # variables, reduce it numerically through evalf and recurse — this
+        # is what callers asking "give me a Julia value" almost always want
+        # (Issue #3). Otherwise return the GiacExpr unchanged.
+        if is_constant(g)
+            return to_julia(Commands.evalf(g))
+        end
         return g
     end
 end
