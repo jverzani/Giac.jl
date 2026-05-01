@@ -4,6 +4,7 @@ version = "0.12.0"
 authors = ["Sébastien Celles <s.celles@gmail.com>"]
 
 [deps]
+CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
 CxxWrap = "1f15a43c-97ca-5a2a-ae31-89f07a497df4"
 GIAC_jll = "cf749d6c-42f5-550d-8800-4812740c2942"
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -25,6 +26,7 @@ GiacTermInterfaceExt = "TermInterface"
 [compat]
 Aqua = "0.8"
 CSV = "0.10"
+CommonSolve = "0.2"
 CxxWrap = "0.16, 0.17"
 DataFrames = "1.6, 1.7, 1.8"
 Documenter = "1"
