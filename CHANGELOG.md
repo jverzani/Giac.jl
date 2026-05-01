@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unchanged because the new method dispatches only on `Pair{<:GiacExpr}...`.
   Idea contributed by [@jverzani](https://github.com/jverzani) in
   [PR #11](https://github.com/s-celles/Giac.jl/pull/11). (065-substitute-tier1)
+- **Julia `Function` arguments accepted by GIAC commands**: `_arg_to_giac_string`
+  now serializes a `Function` value as `string(nameof(arg))`, so callers can pass
+  a Julia function directly where the GIAC command expects a function name —
+  e.g. `combine(log(x) + 2*log(x), log)` instead of `combine(..., "log")`. As a
+  side effect, the same fallback also lets `substitute` accept a `Function`
+  value (`substitute(f, f => log)` yields `log`). Contributed by
+  [@jverzani](https://github.com/jverzani) in
+  [PR #6](https://github.com/s-celles/Giac.jl/pull/6).
 
 ### Changed
 

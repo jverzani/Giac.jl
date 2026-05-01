@@ -450,4 +450,24 @@
             @test string(u(0)) == "u(0)"
         end
     end
+
+    # ========================================================================
+    # Substitute with a Julia Function value (interaction with PR #6)
+    # _value_to_gen falls back through _arg_to_giac_string for non-GiacExpr
+    # values; PR #6 by @jverzani added a Function method that returns
+    # string(nameof(f)). This @testset documents the resulting interaction:
+    # substitute now accepts a Julia function as a replacement value, which
+    # GIAC carries through as a quoted (held) identifier with that name.
+    # ========================================================================
+
+    @testset "Substitute with Julia Function value" begin
+        @giac_var f x
+        # Bare identifier substitution: f -> sin yields the held form 'sin'.
+        @test string(substitute(f, f => sin)) == "'sin'"
+
+        # Applied form: f(x) -> 'sin'(x). The function name is transported
+        # correctly through the substitution; GIAC keeps it quoted because
+        # it was introduced via a generic-identifier substitution path.
+        @test string(substitute(f(x), f => sin)) == "'sin'(x)"
+    end
 end
