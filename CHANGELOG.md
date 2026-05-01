@@ -29,9 +29,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   value (`substitute(f, f => log)` yields `log`). Contributed by
   [@jverzani](https://github.com/jverzani) in
   [PR #6](https://github.com/s-celles/Giac.jl/pull/6).
+- **Additional math operations on `GiacExpr`** — degree-based and pi-multiple
+  trig variants (`sind`, `cosd`, `sinpi`, `cospi`, `asind`, `acosd`, `atand`,
+  `secd`, `cscd`, `cotd`), paired trig (`sincos`, `sincosd`, `sincospi` —
+  return a 2-tuple of `GiacExpr`), angle conversion (`deg2rad`, `rad2deg`),
+  exponential / logarithm extensions (`exp2`, `exp10`, `log1p`, two-argument
+  `log(b, x)` for any base), `adjoint` (so postfix `'` works on `GiacExpr`),
+  and `zero` / `one` (instance and `::Type{GiacExpr}` forms). Contributed by
+  [@jverzani](https://github.com/jverzani) in
+  [PR #9](https://github.com/s-celles/Giac.jl/pull/9).
 
 ### Changed
 
+- **`^(::GiacExpr, ::Number)` and `^(::Number, ::GiacExpr)` widened**: powers
+  on `GiacExpr` previously accepted only an `Integer` exponent; now any
+  `Number` is accepted on either side via `promote`. Existing
+  `^(::GiacExpr, ::Integer)` calls continue to work unchanged. Contributed by
+  [@jverzani](https://github.com/jverzani) in
+  [PR #9](https://github.com/s-celles/Giac.jl/pull/9).
 - **`substitute(expr, dict)` no longer round-trips through the GIAC parser.** The
   dict-form `substitute` for both `GiacExpr` and `GiacMatrix` now calls the direct
   CxxWrap binding `giac_subst` with structured `Gen` vector arguments built via
@@ -43,6 +58,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`substitute(expr, pair)` single-pair method replaced** by the new varargs
   method. `substitute(expr, x => 1)` continues to work without change; the dispatch
   path simply delegates to the new varargs definition. (065-substitute-tier1)
+
+### Fixed
+
+- **`asind` / `acosd` / `atand`**: implementation was `asin(deg2rad(x))` etc.,
+  which converted the input from degrees to radians instead of converting the
+  angle output from radians to degrees (e.g. `asind(1)` returned
+  `asin(π/180)` instead of `90`). Corrected to `rad2deg(asin(x))` (matches
+  Julia Base). Note: GIAC keeps the result as `pi/2 * 180/pi`; calling
+  `simplify` reduces it to the integer.
+- **`sincos` / `sincosd` / `sincospi`**: return-type annotation was
+  `::GiacExpr` but the body returned a 2-tuple, triggering a `MethodError`
+  on every call. Annotation changed to `::Tuple{GiacExpr, GiacExpr}`.
 
 ### Removed
 
