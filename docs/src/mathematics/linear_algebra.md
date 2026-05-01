@@ -108,6 +108,62 @@ The same range syntax works with `@giac_several_vars`:
 - Indices > 9: underscore separators (e.g., `m_1_10`)
 - Negative indices: `m` prefix for minus (e.g., `-1` → `m1`, so `c_m1` for index -1)
 
+## Iteration and Linear Indexing
+
+`GiacMatrix` supports the standard Julia iteration and linear-indexing
+protocols. Iteration order is **column-major**, matching Julia's `Matrix`.
+
+### `length` and basic iteration
+
+```julia
+@giac_var x y
+M = GiacMatrix([x   y   x+y;
+                2*x 2*y x*y])     # 2×3
+
+length(M)            # 6  (= rows * cols)
+
+for e in M
+    println(e)       # x, 2*x, y, 2*y, x+y, x*y  (column-major)
+end
+
+collect(M)           # 6-element Vector
+```
+
+### Linear indexing `M[i]` and Cartesian-index access
+
+```julia
+@giac_var x y
+M = GiacMatrix([x   y   x+y;
+                2*x 2*y x*y])
+
+M[1]                  # x       (= M[1, 1])
+M[3]                  # y       (= M[1, 2])
+M[5]                  # x + y   (= M[1, 3])
+
+M[CartesianIndex(2, 3)]   # x*y  (same as M[2, 3])
+```
+
+### `LinearIndices(M)` and `CartesianIndices(M)`
+
+```julia
+LI = LinearIndices(M)
+LI[1, 1], LI[2, 1], LI[1, 2]      # 1, 2, 3       (column-major)
+
+CI = CartesianIndices(M)
+CI[1], CI[3], CI[5]
+# CartesianIndex(1,1), CartesianIndex(1,2), CartesianIndex(1,3)
+```
+
+These are convenient for routines that take a `GiacMatrix` and want to walk
+its entries with a linear counter, or convert between the two index forms:
+
+```julia
+LI = LinearIndices(M)
+for i in 1:M.rows, j in 1:M.cols
+    @assert M[LI[i, j]] === M[i, j] || string(M[LI[i, j]]) == string(M[i, j])
+end
+```
+
 ## Determinant
 
 Compute the determinant using `det`:
