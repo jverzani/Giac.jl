@@ -285,4 +285,169 @@
             @test string(result[3, 1]) == "4"
         end
     end
+
+    # ========================================================================
+    # 065-substitute-tier1: Direct-binding contract
+    # Locks down simultaneous-substitution semantics and float precision so the
+    # refactor from the string round-trip to GiacCxxBindings.giac_subst stays
+    # safe.
+    # ========================================================================
+
+    @testset "065-substitute-tier1: simultaneous semantics & precision" begin
+        @testset "C-003: Canonical variable swap (GiacExpr)" begin
+            @giac_var x y
+            expr = x + 2*y
+            result = substitute(expr, Dict(x => y, y => x))
+            @test result isa GiacExpr
+            # Simultaneous: swap must NOT collapse to 3*x or 3*y.
+            @test string(result) == "y+2*x"
+            # And rigorous equivalence: result - (y + 2*x) simplifies to 0.
+            diff = invoke_cmd(:simplify, result - (y + 2*x))
+            @test string(diff) == "0"
+        end
+
+        @testset "C-004: Value references another key" begin
+            @giac_var x y
+            # Dict(x => y + 1, y => 0) applied to x must yield y + 1, NOT 1.
+            # Values are taken as written; they are not re-substituted.
+            result = substitute(x, Dict(x => y + 1, y => 0))
+            @test result isa GiacExpr
+            @test string(result) == "y+1"
+            @test string(result) != "1"
+        end
+
+        @testset "C-005-strong: Empty Dict returns identical instance" begin
+            @giac_var x
+            expr = x + 1
+            result = substitute(expr, Dict{GiacExpr, Int}())
+            # Stronger than structural equality: confirms no GIAC call was made.
+            @test result === expr
+        end
+
+        @testset "C-006: GiacMatrix dict-form simple substitution" begin
+            @giac_var x y
+            M = GiacMatrix([x+1 2*x; y x*y])
+            result = substitute(M, Dict(x => 2))
+            @test result isa GiacMatrix
+            @test size(result) == (2, 2)
+            @test string(result[1, 1]) == "3"
+            @test string(result[1, 2]) == "4"
+            @test string(result[2, 1]) == "y"
+            @test string(result[2, 2]) == "2*y"
+        end
+
+        @testset "C-007: GiacMatrix simultaneous swap" begin
+            @giac_var x y
+            M = GiacMatrix([x y; y x])
+            result = substitute(M, Dict(x => y, y => x))
+            @test result isa GiacMatrix
+            @test size(result) == (2, 2)
+            # Swapped element-wise, simultaneously.
+            @test string(result[1, 1]) == "y"
+            @test string(result[1, 2]) == "x"
+            @test string(result[2, 1]) == "x"
+            @test string(result[2, 2]) == "y"
+        end
+
+        @testset "C-008: GiacMatrix empty Dict structural copy" begin
+            @giac_var x y
+            M = GiacMatrix([x+1 2*x; y x*y])
+            result = substitute(M, Dict{GiacExpr, Int}())
+            @test result isa GiacMatrix
+            @test size(result) == size(M)
+            for i in 1:M.rows, j in 1:M.cols
+                @test string(result[i, j]) == string(M[i, j])
+            end
+        end
+
+        @testset "C-013: Float64 precision preservation" begin
+            @giac_var x
+            result = substitute(x, Dict(x => 0.1))
+            result_str = string(result)
+            # Result must contain "0.1" verbatim, not a long-decimal expansion.
+            @test occursin("0.1", result_str)
+            @test !occursin("0.1000000", result_str)
+            @test !occursin("0.0999999", result_str)
+        end
+    end
+
+    # ========================================================================
+    # 065-substitute-tier1: Varargs convenience method
+    # ========================================================================
+
+    @testset "065-substitute-tier1: varargs convenience" begin
+        @testset "C-009: Varargs scalar two-pair == Dict form" begin
+            @giac_var x y
+            r_varargs = substitute(x*y, x => 1, y => 2)
+            r_dict    = substitute(x*y, Dict(x => 1, y => 2))
+            @test r_varargs isa GiacExpr
+            @test string(r_varargs) == string(r_dict)
+            @test string(r_varargs) == "2"
+        end
+
+        @testset "C-010: Varargs swap matches dict swap" begin
+            @giac_var x y
+            r_varargs = substitute(x + 2*y, x => y, y => x)
+            r_dict    = substitute(x + 2*y, Dict(x => y, y => x))
+            @test string(r_varargs) == string(r_dict)
+            @test string(r_varargs) == "y+2*x"
+        end
+
+        @testset "C-011: Zero-pairs varargs returns input unchanged" begin
+            @giac_var x
+            expr = x + 1
+            result = substitute(expr)
+            # No pairs splatted -> Dict() is empty -> no-op short-circuit.
+            @test result === expr
+        end
+
+        @testset "C-012: GiacMatrix varargs swap matches dict swap" begin
+            @giac_var x y
+            M = GiacMatrix([x y; y x])
+            r_varargs = substitute(M, x => y, y => x)
+            r_dict    = substitute(M, Dict(x => y, y => x))
+            @test r_varargs isa GiacMatrix
+            @test size(r_varargs) == (2, 2)
+            for i in 1:2, j in 1:2
+                @test string(r_varargs[i, j]) == string(r_dict[i, j])
+            end
+        end
+    end
+
+    # ========================================================================
+    # 065-substitute-tier1: Call-syntax sugar (idea from PR #11 by @jverzani)
+    # `expr(pair1, pair2, ...)` delegates to `substitute(expr, pair1, ...)`,
+    # inheriting simultaneous-substitution semantics.
+    # ========================================================================
+
+    @testset "065-substitute-tier1: call syntax with Pairs" begin
+        @testset "Single pair via call" begin
+            @giac_var x
+            expr = x + 1
+            @test string(expr(x => 5)) == "6"
+        end
+
+        @testset "Multi-pair via call equals substitute(expr, pairs...)" begin
+            @giac_var a b c d t
+            expr = a*invoke_cmd(:sin, b*t + c) + d
+            r_call    = expr(a => 15, b => 10, c => 5, d => 0)
+            r_sub     = substitute(expr, a => 15, b => 10, c => 5, d => 0)
+            @test r_call isa GiacExpr
+            @test string(r_call) == string(r_sub)
+        end
+
+        @testset "Call-syntax preserves simultaneous swap" begin
+            @giac_var x y
+            expr = x + 2*y
+            # Critical: must not collapse the swap.
+            @test string(expr(x => y, y => x)) == "y+2*x"
+        end
+
+        @testset "Call with non-pair args still does function evaluation" begin
+            # Verifies the new Pair-specific overload does not shadow the
+            # existing function-call-style behavior `u(0)`.
+            @giac_var u(t)
+            @test string(u(0)) == "u(0)"
+        end
+    end
 end

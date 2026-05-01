@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-05-01
+
+### Added
+
+- **Varargs `substitute`**: `substitute(expr, x => 1, y => 2)` and the matching
+  `GiacMatrix` form now accept any number of `Pair` arguments, aligned with
+  `Symbolics.substitute`. Equivalent to the dict form `substitute(expr, Dict(pairs))`;
+  all pairs are applied simultaneously. Calling with zero pairs returns the input
+  unchanged. (065-substitute-tier1)
+- **Call-syntax substitution**: a `GiacExpr` called with pair arguments now performs
+  substitution. `expr(a => 15, b => 10, c => 5, d => 0)` is equivalent to
+  `substitute(expr, a => 15, b => 10, c => 5, d => 0)` and inherits its simultaneous
+  semantics. The existing function-evaluation call shape (`u(0)`, `f(x)`) is
+  unchanged because the new method dispatches only on `Pair{<:GiacExpr}...`.
+  Idea contributed by [@jverzani](https://github.com/jverzani) in
+  [PR #11](https://github.com/s-celles/Giac.jl/pull/11). (065-substitute-tier1)
+
+### Changed
+
+- **`substitute(expr, dict)` no longer round-trips through the GIAC parser.** The
+  dict-form `substitute` for both `GiacExpr` and `GiacMatrix` now calls the direct
+  CxxWrap binding `giac_subst` with structured `Gen` vector arguments built via
+  `make_vect`. Simultaneous-substitution semantics (e.g. `Dict(x => y, y => x)`
+  swaps `x` and `y`) and the public API are unchanged. On a representative
+  non-trivial expression with two pairs, this is roughly 1.5–2× faster than the
+  prior string-round-trip implementation (machine-dependent), and floating-point
+  replacement values are preserved exactly. (065-substitute-tier1)
+- **`substitute(expr, pair)` single-pair method replaced** by the new varargs
+  method. `substitute(expr, x => 1)` continues to work without change; the dispatch
+  path simply delegates to the new varargs definition. (065-substitute-tier1)
+
+### Removed
+
+- Internal helper `_build_subst_command` (no longer needed; the substitution path
+  no longer constructs subst-command strings). Not part of the public API.
+
+## [0.11.2] - 2026-04-16
+
+### Added
+
+- **Symbolic comparison and logical operators on `GiacExpr`**: `<`, `>`, `<=`, `>=`,
+  `&`, `|` are now defined for `GiacExpr`, allowing symbolic conditions to be
+  expressed directly (e.g. `x < y`, `(x > 0) & (y < 1)`). (#4)
+
+## [0.11.1] - 2026-04-11
+
+### Fixed
+
+- **`to_giac` with Symbolics v7 literal numbers**: handles symbolic literal numbers
+  produced by Symbolics v7, fixing a `TypeError` when squaring or otherwise
+  manipulating expressions converted from Symbolics. (#2, closes #1)
+
 ## [0.11.0] - 2026-04-06
 
 ### Added

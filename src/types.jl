@@ -298,6 +298,36 @@ function (expr::GiacExpr)(args...)
     return giac_eval(call_str)
 end
 
+"""
+    (expr::GiacExpr)(first_pair::Pair{<:GiacExpr}, rest::Pair{<:GiacExpr}...) -> GiacExpr
+
+Call-syntax sugar for [`substitute`](@ref): when a `GiacExpr` is called with
+one or more `Pair{<:GiacExpr}` arguments, it dispatches to
+`substitute(expr, first_pair, rest...)` and inherits its simultaneous
+substitution semantics (so `expr(x => y, y => x)` swaps `x` and `y`).
+
+The signature requires at least one pair so that zero-argument calls (`u()`)
+continue to mean function evaluation, not substitution.
+
+Idea contributed by @jverzani in pull request #11.
+
+# Examples
+```jldoctest
+julia> @giac_var x y;
+
+julia> (x^2 + 1)(x => 3)
+GiacExpr: 10
+
+julia> (x + 2*y)(x => y, y => x)
+GiacExpr: y+2*x
+```
+
+# See also
+- [`substitute`](@ref): the underlying operation
+"""
+(expr::GiacExpr)(first_pair::Pair{<:GiacExpr}, rest::Pair{<:GiacExpr}...)::GiacExpr =
+    substitute(expr, first_pair, rest...)
+
 # ============================================================================
 # Derivative Operator D (035-derivative-operator)
 # ============================================================================
