@@ -33,6 +33,9 @@ using LinearAlgebra
     # Commands submodule tests (009-commands-submodule)
     include("test_commands_submodule.jl")
 
+    # CommonSolve integration (PR #7)
+    include("test_commonsolve.jl")
+
 
     # Macro tests (011-giac-symbol-macro)
     include("test_macros.jl")

@@ -62,6 +62,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `true` for free identifiers, ordinary symbolic expressions, and finite
   numbers; `false` for `inf`, `-inf`, and `1/0` (which GIAC normalizes to
   infinity). Implemented as `!to_julia(isinf(expr))::Bool`.
+- **CommonSolve.jl integration**: `Giac.Commands.solve` is now the same generic
+  function as `CommonSolve.solve` (`Giac.Commands.solve === CommonSolve.solve`),
+  so Giac's `solve` participates in the broader Julia "solve" verb ecosystem
+  alongside `DifferentialEquations.jl`, `NLsolve.jl`, `Symbolics.jl`, etc.
+  Dispatch is by argument type, so there is no conflict — `solve(::GiacExpr, …)`
+  routes to GIAC, `solve(::ODEProblem, …)` routes to DifferentialEquations,
+  and so on. `CommonSolve` is a tiny hard dependency (~50 LOC, compat `0.2`).
+  Note that `CommonSolve` also exports `init` and `solve!` as part of an
+  iterative-solver protocol; Giac is a symbolic CAS (non-iterative) so only
+  `solve` is extended — `init` and `solve!` are left untouched and remain
+  available for other packages to extend without conflict.
+  Contributed by [@jverzani](https://github.com/jverzani) in
+  [PR #7](https://github.com/s-celles/Giac.jl/pull/7).
 
 ### Changed
 

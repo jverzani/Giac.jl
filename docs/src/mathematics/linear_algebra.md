@@ -260,6 +260,46 @@ solve([x + y ~ 3, x - y ~ 1], [x, y])
 # Returns the solution
 ```
 
+`Giac.Commands.solve` is the same generic function as
+[`CommonSolve.solve`](https://github.com/SciML/CommonSolve.jl), so it shares
+the "solve" verb with `DifferentialEquations.jl`, `NLsolve.jl`, `Symbolics.jl`,
+etc. Dispatch is by argument type, so there is no name conflict when both
+packages are loaded — `solve(eq::GiacExpr, var)` routes to Giac,
+`solve(prob::ODEProblem, …)` routes to DifferentialEquations, and so on.
+
+```julia
+using Giac.Commands: solve   # this is the same function as CommonSolve.solve
+
+solve(x^2 - 1 ~ 0, x)   # → list[-1, 1]
+# The `~` operator builds a symbolic equation; Giac dispatches the
+# CommonSolve.solve verb to its CAS solver.
+```
+
+Either side of the equation works:
+
+```julia
+solve(x^2 ~ 1, x)        # → list[-1, 1]
+solve(x^2 - 1, x)        # → list[-1, 1]   (Giac infers `= 0`)
+```
+
+!!! note "Why `solve` only, and not `init` / `solve!`"
+
+    `CommonSolve` defines three verbs — `init`, `solve`, and `solve!` — to
+    support the iterative-solver protocol used by `DifferentialEquations.jl`
+    and friends (`init(prob, …)` builds an integrator, `solve!` advances it,
+    `solve` is a one-shot wrapper that does both). Giac is a one-shot
+    symbolic solver — there is no integrator state to advance — so only
+    `solve` has a natural meaning here. `Giac` therefore extends
+    `CommonSolve.solve` and leaves `init` and `solve!` untouched, so
+    packages that *do* implement the iterative protocol can extend them
+    without any conflict.
+
+    Giac also has its own ODE solver, `Giac.Commands.desolve` (symbolic) and
+    `Giac.Commands.odesolve` (numerical) — see
+    [Differential Equations](differential_equations.md). Those are
+    intentionally separate verbs (not aliased to `solve`) because their
+    signatures don't fit the algebraic `solve(eq, var)` shape.
+
 ## Matrix Rank
 
 Compute the rank of a matrix using `invoke_cmd(:rank, ...)`:
