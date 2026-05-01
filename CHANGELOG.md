@@ -45,8 +45,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `LinearIndices(M)` / `CartesianIndices(M)` are available for converting
   between forms. Contributed by [@jverzani](https://github.com/jverzani) in
   [PR #10](https://github.com/s-celles/Giac.jl/pull/10).
+- **Introspection helpers**: `is_constant`, `unwrap_const`, `free_symbols`,
+  `hasmatch`, `iscall`, `operation`, `arguments`, `maketerm`,
+  `Constants.is_giac_constant`, identity constructor `GiacExpr(::GiacExpr)`.
+  These let callers query whether an expression is closed-form constant,
+  enumerate its free symbols, and walk it as a syntax tree. Contributed by
+  [@jverzani](https://github.com/jverzani) in
+  [PR #8](https://github.com/s-celles/Giac.jl/pull/8). Resolves
+  [issue #3](https://github.com/s-celles/Giac.jl/issues/3).
+- **TermInterface.jl extension** (`GiacTermInterfaceExt`): when
+  `TermInterface` is loaded, `GiacExpr` participates in the
+  `iscall` / `operation` / `arguments` / `maketerm` / `isexpr` protocol
+  used by Metatheory.jl, SymbolicUtils.jl, and other rewriters. Pure
+  weak-dep — no cost to users who don't load `TermInterface`.
+- **`Base.isfinite(::GiacExpr)`**: returns a Julia `Bool`. `isfinite(x)` is
+  `true` for free identifiers, ordinary symbolic expressions, and finite
+  numbers; `false` for `inf`, `-inf`, and `1/0` (which GIAC normalizes to
+  infinity). Implemented as `!to_julia(isinf(expr))::Bool`.
 
 ### Changed
+
+- **`to_julia(::GiacExpr)` now reduces free-variable-free expressions to
+  numbers via `evalf`.** Previously, `to_julia(substitute(sin(x), x => 2))`
+  returned `GiacExpr: sin(2)` — the symbolic form was preserved even though
+  the caller asked for a Julia value. Now it returns `0.9092…` (a `Float64`).
+  The layered design holds: `evalf(expr)` keeps you in Giac and returns a
+  `GiacExpr` whose internal type is `DOUBLE`; `to_julia(expr)` bridges to a
+  Julia number. Symbolic expressions with at least one free variable still
+  pass through unchanged. **This is a behavior change for users who relied
+  on `to_julia` of constant symbolic expressions returning a `GiacExpr`** —
+  use `evalf(expr)` instead if you want a numeric `GiacExpr`. Resolves
+  [issue #3](https://github.com/s-celles/Giac.jl/issues/3).
 
 - **`^(::GiacExpr, ::Number)` and `^(::Number, ::GiacExpr)` widened**: powers
   on `GiacExpr` previously accepted only an `Integer` exponent; now any
