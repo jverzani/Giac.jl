@@ -716,3 +716,47 @@ _giac_series_tier1(expr_ptr::Ptr{Cvoid}, var_ptr::Ptr{Cvoid}, order_ptr::Ptr{Cvo
 _giac_gcd_tier1(a_ptr::Ptr{Cvoid}, b_ptr::Ptr{Cvoid}) = _tier1_binary(GiacCxxBindings.giac_gcd, a_ptr, b_ptr)
 _giac_lcm_tier1(a_ptr::Ptr{Cvoid}, b_ptr::Ptr{Cvoid}) = _tier1_binary(GiacCxxBindings.giac_lcm, a_ptr, b_ptr)
 _giac_pow_tier1(base_ptr::Ptr{Cvoid}, exp_ptr::Ptr{Cvoid}) = _tier1_binary(GiacCxxBindings.giac_pow, base_ptr, exp_ptr)
+
+# ============================================================================
+# Vector-argument substitution helpers (065-substitute-tier1)
+# Used by substitute.jl to call giac_subst with structured Gen vector arguments
+# instead of round-tripping through the GIAC parser.
+# ============================================================================
+
+# Resolve a GiacExpr to its CxxWrap Gen, falling back to giac_eval if no cached Gen.
+function _get_gen_or_eval(expr::GiacExpr)
+    g = _get_gen(expr.ptr)
+    return g === nothing ? GiacCxxBindings.giac_eval(_get_expr_string(expr.ptr)) : g
+end
+
+# Resolve any value (GiacExpr or numeric/symbolic scalar) to a CxxWrap Gen.
+# Non-GiacExpr values are routed through _arg_to_giac_string + giac_eval, matching
+# the existing dict-form contract that accepts e.g. Dict(x => 2).
+function _value_to_gen(v)
+    return v isa GiacExpr ? _get_gen_or_eval(v) :
+                            GiacCxxBindings.giac_eval(_arg_to_giac_string(v))
+end
+
+# Direct vector-argument substitution: calls GiacCxxBindings.giac_subst with
+# _VECT_LIST_-typed Gen vectors built via make_vect, preserving simultaneous
+# substitution semantics (e.g. swap Dict(x => y, y => x)) without going through
+# the GIAC parser.
+function _giac_subst_vec_tier1(expr::GiacExpr,
+                               vars::AbstractVector{<:GiacExpr},
+                               vals::AbstractVector)::GiacExpr
+    expr_gen = _get_gen_or_eval(expr)
+    var_gens = StdVector{GiacCxxBindings.Gen}()
+    val_gens = StdVector{GiacCxxBindings.Gen}()
+    for v in vars
+        push!(var_gens, _get_gen_or_eval(v))
+    end
+    for w in vals
+        push!(val_gens, _value_to_gen(w))
+    end
+    vars_vect = GiacCxxBindings.make_vect(var_gens, Int32(0))
+    vals_vect = GiacCxxBindings.make_vect(val_gens, Int32(0))
+    result_gen = with_giac_lock() do
+        GiacCxxBindings.giac_subst(expr_gen, vars_vect, vals_vect)
+    end
+    return GiacExpr(_make_gen_ptr(result_gen))
+end

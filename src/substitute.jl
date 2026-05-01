@@ -1,45 +1,6 @@
-# Substitute function for GiacExpr (028-substitute-mechanism)
-# Provides Symbolics.jl-compatible substitute(expr, Dict(...)) interface
-
-# ============================================================================
-# Internal Helper Functions
-# ============================================================================
-
-"""
-    _build_subst_command(expr_str::String, vars::Vector{String}, vals::Vector{String}) -> String
-
-Build GIAC subst command string for evaluation.
-
-Internal function that constructs the appropriate GIAC syntax:
-- Single variable: `subst(expr, var, val)`
-- Multiple variables: `subst(expr, [v1,v2,...], [val1,val2,...])`
-
-# Arguments
-- `expr_str`: String representation of the expression
-- `vars`: Vector of variable name strings
-- `vals`: Vector of value strings
-
-# Returns
-- `String`: GIAC command ready for evaluation
-"""
-function _build_subst_command(expr_str::String, vars::Vector{String}, vals::Vector{String})::String
-    if length(vars) != length(vals)
-        throw(ArgumentError("Number of variables ($(length(vars))) must match number of values ($(length(vals)))"))
-    end
-
-    if length(vars) == 0
-        # Empty substitution - return expression unchanged
-        return expr_str
-    elseif length(vars) == 1
-        # Single variable: subst(expr, var, val)
-        return "subst($(expr_str), $(vars[1]), $(vals[1]))"
-    else
-        # Multiple variables: subst(expr, [vars], [vals])
-        vars_list = "[" * join(vars, ",") * "]"
-        vals_list = "[" * join(vals, ",") * "]"
-        return "subst($(expr_str), $(vars_list), $(vals_list))"
-    end
-end
+# Substitute function for GiacExpr (028-substitute-mechanism, 065-substitute-tier1)
+# Provides Symbolics.jl-compatible substitute(expr, Dict(...)) interface backed
+# by the direct CxxWrap binding _giac_subst_vec_tier1 (in src/wrapper.jl).
 
 # ============================================================================
 # Public API: substitute function
@@ -74,52 +35,50 @@ julia> string(substitute(expr, Dict(x => 2, y => 3)))
 ```
 
 # See also
-- [`invoke_cmd`](@ref): Lower-level command invocation
 - [`@giac_var`](@ref): Create symbolic variables
 """
 function substitute(expr::GiacExpr, dict::AbstractDict{<:GiacExpr})::GiacExpr
-    # Handle empty Dict - return original expression unchanged
-    if isempty(dict)
-        return expr
-    end
+    # Handle empty Dict - return original expression unchanged (no GIAC call).
+    isempty(dict) && return expr
 
-    # Convert Dict to parallel arrays of variable and value strings
-    vars = String[]
-    vals = String[]
-
-    for (var, val) in dict
-        push!(vars, string(var))
-        push!(vals, _arg_to_giac_string(val))
-    end
-
-    # Build and execute the GIAC subst command
-    expr_str = string(expr)
-    cmd_str = _build_subst_command(expr_str, vars, vals)
-
-    return with_giac_lock() do
-        giac_eval(cmd_str)
-    end
+    # Collect parallel vectors of GiacExpr keys and untyped values, then
+    # delegate to the direct-binding shim. Substitution is applied
+    # simultaneously by giac_subst, so e.g. Dict(x => y, y => x) swaps.
+    vars = collect(GiacExpr, keys(dict))
+    vals = collect(values(dict))
+    return _giac_subst_vec_tier1(expr, vars, vals)
 end
 
 """
-    substitute(expr::GiacExpr, pair::Pair{<:GiacExpr}) -> GiacExpr
+    substitute(expr::GiacExpr, pairs::Pair{<:GiacExpr}...) -> GiacExpr
 
-Substitute a single variable using Pair syntax.
+Substitute variables using one or more pair arguments, aligned with
+`Symbolics.substitute`.
 
-Convenience method equivalent to `substitute(expr, Dict(pair))`.
+Equivalent to `substitute(expr, Dict(pairs))`. All pairs are applied
+simultaneously (the canonical swap `substitute(expr, x => y, y => x)` therefore
+swaps `x` and `y` rather than collapsing). Calling with zero pairs returns the
+input expression unchanged.
 
 # Examples
-```julia
-@giac_var x
-substitute(x + 1, x => 5)  # Returns: 6
+```jldoctest
+julia> @giac_var x y;
+
+julia> substitute(x + 1, x => 5)
+GiacExpr: 6
+
+julia> substitute(x*y, x => 1, y => 2)
+GiacExpr: 2
+
+julia> substitute(x + 2*y, x => y, y => x)
+GiacExpr: y+2*x
 ```
 
 # See also
-- [`substitute(::GiacExpr, ::AbstractDict)`](@ref): Full Dict-based substitution
+- [`substitute(::GiacExpr, ::AbstractDict)`](@ref): Dict-based form
 """
-function substitute(expr::GiacExpr, pair::Pair{<:GiacExpr})::GiacExpr
-    return substitute(expr, Dict(pair))
-end
+substitute(expr::GiacExpr, pairs::Pair{<:GiacExpr}...)::GiacExpr =
+    isempty(pairs) ? expr : substitute(expr, Dict(pairs))
 
 # ============================================================================
 # GiacMatrix Support: Element-wise Substitution
@@ -152,46 +111,54 @@ substitute(M, Dict(x => 2, y => 3)) # Returns fully numeric matrix
 - [`substitute(::GiacExpr, ::AbstractDict)`](@ref): Scalar expression substitution
 """
 function substitute(m::GiacMatrix, dict::AbstractDict{<:GiacExpr})::GiacMatrix
-    # Handle empty Dict - return a copy of the matrix
+    # Handle empty Dict - return a structural copy of the matrix.
     if isempty(dict)
-        # Create a new matrix with the same elements
         result = Matrix{Any}(undef, m.rows, m.cols)
-        for i in 1:m.rows
-            for j in 1:m.cols
-                result[i, j] = m[i, j]
-            end
+        for i in 1:m.rows, j in 1:m.cols
+            result[i, j] = m[i, j]
         end
         return GiacMatrix(result)
     end
 
-    # Apply substitute element-wise
+    # Build the variable/value vectors ONCE outside the element loop, then
+    # call _giac_subst_vec_tier1 per element. This avoids re-vectorizing
+    # the dict for every matrix entry while preserving simultaneous semantics.
+    vars = collect(GiacExpr, keys(dict))
+    vals = collect(values(dict))
     result = Matrix{Any}(undef, m.rows, m.cols)
-    for i in 1:m.rows
-        for j in 1:m.cols
-            result[i, j] = substitute(m[i, j], dict)
-        end
+    for i in 1:m.rows, j in 1:m.cols
+        result[i, j] = _giac_subst_vec_tier1(m[i, j], vars, vals)
     end
-
     return GiacMatrix(result)
 end
 
 """
-    substitute(m::GiacMatrix, pair::Pair{<:GiacExpr}) -> GiacMatrix
+    substitute(m::GiacMatrix, pairs::Pair{<:GiacExpr}...) -> GiacMatrix
 
-Substitute a single variable in each element of a matrix using Pair syntax.
+Element-wise variant of [`substitute(::GiacExpr, ::Pair{<:GiacExpr}...)`](@ref)
+for symbolic matrices.
 
-Convenience method equivalent to `substitute(m, Dict(pair))`.
+Equivalent to `substitute(m, Dict(pairs))`. All pairs are applied simultaneously
+to every element. Calling with zero pairs returns a structural copy of the
+input matrix.
 
 # Examples
-```julia
-@giac_var x
-M = GiacMatrix([x 2*x; x+1 x^2])
-substitute(M, x => 3)  # Returns: [[3, 6], [4, 9]]
+```jldoctest
+julia> @giac_var x;
+
+julia> M = GiacMatrix([x 2*x; x+1 x^2]);
+
+julia> result = substitute(M, x => 3);
+
+julia> result[1, 1]
+GiacExpr: 3
+
+julia> result[2, 2]
+GiacExpr: 9
 ```
 
 # See also
-- [`substitute(::GiacMatrix, ::AbstractDict)`](@ref): Full Dict-based matrix substitution
+- [`substitute(::GiacMatrix, ::AbstractDict)`](@ref): Dict-based matrix form
 """
-function substitute(m::GiacMatrix, pair::Pair{<:GiacExpr})::GiacMatrix
-    return substitute(m, Dict(pair))
-end
+substitute(m::GiacMatrix, pairs::Pair{<:GiacExpr}...)::GiacMatrix =
+    substitute(m, isempty(pairs) ? Dict{GiacExpr,Any}() : Dict(pairs))
