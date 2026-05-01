@@ -316,13 +316,13 @@ end
     end
 
     @testset "Base.sincospi, sincosd" begin
-        a, b = sincosd(giac_eval("90"))
-        @test isone(a)
-        @test iszero(b)
-
-        c,d = sincospi(giac_eval("1"))
+        s, c = sincosd(giac_eval("90"))
+        @test isone(s)
         @test iszero(c)
-        @test isone(-d)
+
+        sp, cp = sincospi(giac_eval("1"))
+        @test iszero(sp)
+        @test isone(-cp)
     end
 
 
