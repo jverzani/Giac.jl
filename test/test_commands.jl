@@ -308,10 +308,10 @@ end
         @test result isa GiacExpr
         @test isone(result)
 
-        for (a,b) ∈ ((secd, asecd), (cscd, acscd), (cotd, acotd))
-            u = giac_eval("2")
-            @test a(b(u)) == 2
-            @test b(a(u)) == 2
+        for (f, f_inv) ∈ ((secd, asecd), (cscd, acscd), (cotd, acotd))
+            n = giac_eval("2")
+            @test f_inv(f(n)) == 2
+            @test f(f_inv(n)) == 2
         end
     end
 
