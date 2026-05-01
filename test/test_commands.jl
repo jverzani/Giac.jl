@@ -315,6 +315,17 @@ end
         end
     end
 
+    @test "Base.sincospi, sincosd" begin
+        a, b = sincosd(giac_eval("90"))
+        @test iszero(b)
+        @test isone(a)
+
+        c,d = sincospi(giac_eval("1"))
+        @test iszero(c)
+        @test isone(-d)
+    end
+
+
 
     @testset "Base.exp" begin
         # T067: Test Base.exp(giac_eval("x"))
