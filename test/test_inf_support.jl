@@ -69,4 +69,36 @@ using Giac.Commands: limit, integrate
         @test string(result_julia) == string(result_giac)
     end
 
+    # ========================================================================
+    # Base.isfinite(::GiacExpr) — Issue #3 follow-up, task 4
+    # Returns a Julia Bool: !isinf(expr) with the boolean conversion done
+    # via to_julia. Identifiers / symbolic expressions are reported finite.
+    # ========================================================================
+
+    @testset "Base.isfinite" begin
+        @giac_var x
+
+        # Finite numerics.
+        @test isfinite(giac_eval("0"))
+        @test isfinite(giac_eval("1"))
+        @test isfinite(giac_eval("-1"))
+        @test isfinite(giac_eval("1/2"))
+        @test isfinite(giac_eval("3.14"))
+
+        # Infinities (both Julia Inf and GIAC inf paths).
+        @test !isfinite(giac_eval("inf"))
+        @test !isfinite(giac_eval("-inf"))
+        @test !isfinite(giac_eval("1/0"))   # GIAC normalizes 1/0 to inf
+
+        # Free identifiers and ordinary symbolic exprs are finite
+        # (GIAC does not classify them as inf).
+        @test isfinite(x)
+        @test isfinite(x + 1)
+        @test isfinite(sin(x))
+
+        # Return type is Julia Bool, not GiacExpr.
+        @test isfinite(giac_eval("1")) isa Bool
+        @test isfinite(giac_eval("inf")) isa Bool
+    end
+
 end
