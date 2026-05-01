@@ -310,6 +310,25 @@ is_constant(giac_eval("0"))         # true (integer, not boolean)
 """
 is_constant(ex::GiacExpr) = !hasmatch(ex, x -> is_identifier(x) && !Constants.is_giac_constant(x))
 
+"""
+    hasmatch(ex::GiacExpr, pred) -> Bool
+
+Recursively test whether any sub-expression of `ex` satisfies the predicate
+`pred`. Walks every operand of compound expressions; for atomic expressions
+(identifiers, numbers, …) the predicate is applied to `ex` itself.
+
+This is the building block used by [`is_constant`](@ref) — it can also be
+used directly for ad-hoc tree searches.
+
+# Examples
+```julia
+Giac.hasmatch(giac_eval("sin(x) + 2"), Giac.is_identifier)  # true (contains x)
+Giac.hasmatch(giac_eval("pi + 2"),    Giac.is_identifier)   # true (pi is an
+                                                            # identifier; combine
+                                                            # with is_giac_constant
+                                                            # to exclude constants)
+```
+"""
 function hasmatch(ex::GiacExpr, pred)
     if is_symbolic(ex)
         return any(Base.Fix2(hasmatch, pred), arguments(ex))
