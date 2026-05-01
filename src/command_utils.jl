@@ -305,6 +305,8 @@ Compute the tangent of a GiacExpr.
 Uses Tier 1 C++ wrapper for high performance.
 """
 Base.tan(expr::GiacExpr)::GiacExpr = _tier1_or_fallback(_giac_tan_tier1, :tan, expr)
+Base.tand(expr::GiacExpr)::GiacExpr = tan(deg2rad(expr))
+Base.tanpi(expr::GiacExpr)::GiacExpr = tan(π * expr)
 
 """
     Base.asin(expr::GiacExpr) -> GiacExpr
@@ -339,11 +341,13 @@ Base.secd(expr::GiacExpr)::GiacExpr = sec(deg2rad(expr))
 Base.cscd(expr::GiacExpr)::GiacExpr = csc(deg2rad(expr))
 Base.cotd(expr::GiacExpr)::GiacExpr = cot(deg2rad(expr))
 
-# Paired trig — return a tuple of two GiacExpr (NOT a single GiacExpr).
-Base.sincos(expr::GiacExpr)::Tuple{GiacExpr, GiacExpr}    = (sin(expr), cos(expr))
-Base.sincosd(expr::GiacExpr)::Tuple{GiacExpr, GiacExpr}   = (sind(expr), cosd(expr))
-Base.sincospi(expr::GiacExpr)::Tuple{GiacExpr, GiacExpr}  = (sinpi(expr), cospi(expr))
+Base.asecd(expr::GiacExpr)::GiacExpr = rad2deg(asec(expr))
+Base.acscd(expr::GiacExpr)::GiacExpr = rad2deg(acsc(expr))
+Base.acotd(expr::GiacExpr)::GiacExpr = rad2deg(acot(expr))
 
+Base.sincos(expr::GiacExpr)::Tuple{GiacExpr, GiacExpr} = (sin(expr), cos(expr))
+Base.sincosd(expr::GiacExpr)::Tuple{GiacExpr, GiacExpr} = (sind(expr), cosd(expr))
+Base.sincospi(expr::GiacExpr)::Tuple{GiacExpr, GiacExpr} = (sinpi(expr), cospi(expr))
 
 Base.deg2rad(expr::GiacExpr)::GiacExpr = (expr*pi) / 180
 Base.rad2deg(expr::GiacExpr)::GiacExpr = (expr*180) / pi

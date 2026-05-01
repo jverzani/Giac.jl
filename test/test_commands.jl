@@ -229,6 +229,25 @@ end
         @test string(result) == "sin(x)"
     end
 
+    @testset "Base.sind, sinpi" begin
+        # T065a: Test Base.sind(giac_eval("x"))
+        result = sind(giac_eval("90"))
+        @test result isa GiacExpr
+        @test isone(result)
+
+        result = sinpi(giac_eval("1/2"))
+        @test result isa GiacExpr
+        @test isone(result)
+
+        result = asind(sind(giac_eval("1/2")))
+        @test result isa GiacExpr
+        @test result == 1//2
+
+        result = sind(asind(giac_eval("1/2")))
+        @test result isa GiacExpr
+        @test result == 1//2
+    end
+
     @testset "Base.cos" begin
         # T066: Test Base.cos(giac_eval("x"))
         x = giac_eval("x")
@@ -236,6 +255,77 @@ end
         @test result isa GiacExpr
         @test string(result) == "cos(x)"
     end
+
+    @testset "Base.cosd, cospi" begin
+        # T066a: Test Base.cosd(giac_eval("x"))
+        result = cosd(giac_eval("90"))
+        @test result isa GiacExpr
+        @test iszero(result)
+
+        result = cospi(giac_eval("1/2"))
+        @test result isa GiacExpr
+        @test iszero(result)
+
+        result = acosd(cosd(giac_eval("1/2")))
+        @test result isa GiacExpr
+        @test result == 1//2
+
+        result = cosd(acosd(giac_eval("1/2")))
+        @test result isa GiacExpr
+        @test result == 1//2
+    end
+
+    @testset "Base.tand, tanpi" begin
+        # T066b: Test Base.tand(giac_eval("x"))
+        result = tand(giac_eval("45"))
+        @test result isa GiacExpr
+        @test isone(result)
+
+        result = tanpi(giac_eval("1"))
+        @test result isa GiacExpr
+        @test iszero(result)
+
+        result = atand(tand(giac_eval("1/2")))
+        @test result isa GiacExpr
+        @test result == 1//2
+
+        result = tand(atand(giac_eval("1/2")))
+        @test result isa GiacExpr
+        @test result == 1//2
+    end
+
+    @testset "Base.cscd/secd/cotd" begin
+        # T066b: Test Base.tand(giac_eval("x"))
+        result = cscd(giac_eval("90"))
+        @test result isa GiacExpr
+        @test isone(result)
+
+        result = secd(giac_eval("360"))
+        @test result isa GiacExpr
+        @test isone(result)
+
+        result = cotd(giac_eval("45"))
+        @test result isa GiacExpr
+        @test isone(result)
+
+        for (f, f_inv) ∈ ((secd, asecd), (cscd, acscd), (cotd, acotd))
+            n = giac_eval("2")
+            @test f_inv(f(n)) == 2
+            @test f(f_inv(n)) == 2
+        end
+    end
+
+    @testset "Base.sincospi, sincosd" begin
+        s, c = sincosd(giac_eval("90"))
+        @test isone(s)
+        @test iszero(c)
+
+        sp, cp = sincospi(giac_eval("1"))
+        @test iszero(sp)
+        @test isone(-cp)
+    end
+
+
 
     @testset "Base.exp" begin
         # T067: Test Base.exp(giac_eval("x"))
