@@ -198,4 +198,16 @@ function _init_constants()
     _i[] = giac_eval("i")
 end
 
+# is a constant
+"""
+    is_giac_constant(expr::Giac_Eval) -> Bool
+
+Is expression one of the defined constants.
+
+"""
+function is_giac_constant(expr::GiacExpr)::Bool
+    any(c -> expr == giac_eval(c), ("pi", "e", "i"))
+end
+
+
 end # module Constants

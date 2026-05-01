@@ -292,6 +292,56 @@ function is_boolean(g::GiacExpr)::Bool
     return str == "true" || str == "false"
 end
 
+"""
+    is_constant(g::GiacExpr) -> Bool
+
+Return `true` if the expression has no symbolic variables
+
+
+# Example
+```julia
+is_constant(giac_eval("x"))         # false
+is_constant(giac_eval("sin(x)"))    # false
+is_constant(giac_eval("1 == 1"))    # true (comparison returns constant)
+is_constant(giac_eval("pi"))        # true
+is_constant(giac_eval("0"))         # true (integer, not boolean)
+```
+
+"""
+is_constant(ex::GiacExpr) = !hasmatch(ex, x -> is_identifier(x) && !Constants.is_giac_constant(x))
+
+function hasmatch(ex::GiacExpr, pred)
+    if is_symbolic(ex)
+        return any(Base.Fix2(hasmatch, pred), arguments(ex))
+    end
+    pred(ex)
+end
+
+"""
+    free_symbols(ex::GiacExpr) -> Set{GiacExpr}
+
+Return the free symbols in a symbolic expression
+"""
+function free_symbols(ex::GiacExpr)::Set{GiacExpr}
+    S = Set{GiacExpr}()
+    free_symbols!(S, ex)
+    S
+end
+function free_symbols!(S::Set{GiacExpr}, ex::GiacExpr)::Nothing
+    Constants.is_giac_constant(ex) && return nothing
+    if is_identifier(ex)
+        push!(S, ex)
+        return nothing
+    end
+    !is_symbolic(ex) && return nothing
+    !iscall(ex) && return nothing
+    for a ∈ arguments(ex)
+        free_symbols!(S, a)
+    end
+    return nothing
+end
+
+
 # ============================================================================
 # Component Access Functions
 # ============================================================================
@@ -476,6 +526,8 @@ function symb_funcname(g::GiacExpr)::String
     end
 end
 
+
+
 """
     symb_argument(g::GiacExpr) -> GiacExpr
 
@@ -510,6 +562,27 @@ function symb_argument(g::GiacExpr)::GiacExpr
         return m !== nothing ? giac_eval(String(m.captures[1])) : g
     end
 end
+
+## TermInterface names
+iscall(g::GiacExpr)::Bool = giac_type(g) == Giac.SYMB
+
+function operation(g::GiacExpr)
+    iscall(g) || throw(ArgumentError("expression is not a function call"))
+    fn = Symbol(symb_funcname(g))
+    hasproperty(Giac.Commands, fn) && return getproperty(Giac.Commands, fn)
+    hasproperty(Giac, fn) && return getproperty(Giac, fn)
+    hasproperty(Base, fn) && return getproperty(Base, fn)
+    hasproperty(LinearAlgebra, fn) && return getproperty(LinearAlgebra, fn)
+    throw(ArgumentError("Cannot locate function `$fn` in Giac.Commands, Giac, Base, or LinearAlgebra"))
+end
+
+function arguments(g::GiacExpr)::Vector{GiacExpr}
+    iscall(g) || throw(ArgumentError("expression is not a function call"))
+    collect(GiacExpr, symb_argument(g))
+end
+
+maketerm(::Type{GiacExpr}, op, args, metadata=nothing)::GiacExpr = GiacExpr(op(args...))
+
 
 # Internal helper to convert Gen to GiacExpr
 function _gen_to_giacexpr(gen)
