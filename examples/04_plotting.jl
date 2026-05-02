@@ -135,6 +135,54 @@ begin
 	plot3d()
 end
 
+# ╔═╡ b1c2d3e4-f5a6-7890-abcd-200000000050
+md"""
+---
+
+## 2b. Same surface, with `build_function`
+
+`build_function(expr, vars...)` is the named one-liner for exactly the
+`substitute` + `to_julia` pattern you saw above. It returns a Julia callable
+that you can pass straight to `Plots.surface` (or broadcast over an array,
+or use in a comprehension), without writing the wrapper closure by hand.
+
+The two cells below produce visually identical plots — the only difference
+is that `build_function` makes the symbolic-to-numeric step a single named
+call.
+"""
+
+# ╔═╡ b1c2d3e4-f5a6-7890-abcd-200000000051
+md"""
+a= $slider_a
+
+b= $slider_b
+"""
+
+# ╔═╡ b1c2d3e4-f5a6-7890-abcd-200000000052
+begin
+	function plot3d_build_function()
+		expr = sin(√(a * x^2 + b * y^2)) * cos(x/2)
+		num_expr = substitute(expr, Dict(a => _a, b => _b))
+
+		# One named call replaces the manual `f(_x, _y) = to_julia(...)` closure.
+		f = build_function(num_expr, x, y)
+
+		x_ = range(-3, 3, length=100)
+		y_ = range(-3, 3, length=100)
+
+		Plots.surface(x_, y_, f,
+			xlabel = "x", ylabel = "y", zlabel = "z",
+			title = "Surface (build_function) z = $num_expr",
+			colorbar = true,
+			camera = (30, 45),
+			color = :viridis,
+			size = (800, 600)
+		)
+	end
+
+	plot3d_build_function()
+end
+
 # ╔═╡ b1c2d3e4-f5a6-7890-abcd-200000000020
 md"""
 ---
@@ -201,7 +249,8 @@ md"""
 | Step | How |
 |------|-----|
 | Numeric parameters | `substitute(expr, Dict(a => _a, b => _b, ...))` |
-| Julia-callable function | `f(_x) = to_julia(substitute(num_expr, x => _x))` |
+| Julia-callable function (named) | `f = build_function(num_expr, x)` (or `..., x, y` for multivariate) |
+| Julia-callable function (manual) | `f(_x) = to_julia(substitute(num_expr, x => _x))` |
 | 1D plot | `Plots.plot(_x, f.(_x))` |
 | Surface | `Plots.surface(x_, y_, f)` |
 | Vector field | `diff` + `quiver!` over a grid |
@@ -1492,6 +1541,9 @@ version = "1.13.0+0"
 # ╟─b1c2d3e4-f5a6-7890-abcd-200000000010
 # ╟─b1c2d3e4-f5a6-7890-abcd-200000000011
 # ╠═b1c2d3e4-f5a6-7890-abcd-200000000012
+# ╟─b1c2d3e4-f5a6-7890-abcd-200000000050
+# ╟─b1c2d3e4-f5a6-7890-abcd-200000000051
+# ╠═b1c2d3e4-f5a6-7890-abcd-200000000052
 # ╟─b1c2d3e4-f5a6-7890-abcd-200000000020
 # ╟─b1c2d3e4-f5a6-7890-abcd-200000000021
 # ╠═b1c2d3e4-f5a6-7890-abcd-200000000022

@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-05-02
+
+### Added
+
+- **`build_function` Symbolics backend (Tier 3)**: a new `backend::Symbol`
+  keyword on `build_function` selects the evaluation engine. The default
+  `backend = :giac` is unchanged from v0.13. The new `backend = :symbolics`
+  (requires `using Symbolics`) round-trips the expression through
+  `to_symbolics` and compiles it via `Symbolics.build_function`, returning a
+  native Julia callable that is autodiff-friendly (ForwardDiff, SciML
+  solvers) and typically at least an order of magnitude faster in hot
+  loops. Documented in
+  [`docs/src/julia_functions.md`](docs/src/julia_functions.md), with a
+  comparison table and a runtime benchmark.
+
+  Error paths: `backend = :symbolics` without `using Symbolics`, free
+  symbols not bound by `vars`, GIAC heads with no `to_symbolics`
+  translation, and bad backend symbols all surface as actionable
+  `ArgumentError`s at `build_function` time. Closes
+  [#17](https://github.com/s-celles/Giac.jl/issues/17) Tier 3.
+
+  Naming caveat: `Symbolics` also exports `build_function`; with both
+  `using Giac` and `using Symbolics` in scope, qualify as
+  `Giac.build_function(...)` (this is the standard Julia convention for
+  name conflicts and is documented in the docstring and docs page).
+  (067-build-function-tier3)
+
+## [0.13.0] - 2026-05-02
+
+### Added
+
+- **`build_function`**: convert a `GiacExpr` into a native Julia callable
+  with one named call. `f = build_function(expr, x, y)` returns a closure
+  satisfying `f(a, b) == to_julia(substitute(expr, x => a, y => b))`, suitable
+  as a drop-in argument to `Plots.plot`, `Plots.surface`, broadcasting
+  (`f.(xs)`), and matrix comprehensions. The wrapper is intentionally thin —
+  it composes the existing `substitute` + `to_julia` chain — and the
+  underlying primitives remain available for cases that need a custom step
+  in between. Documented in
+  [`docs/src/julia_functions.md`](docs/src/julia_functions.md), with a
+  comparison table to `Symbolics.build_function` and SymPy's `lambdify`, and
+  showcased in the existing `examples/04_plotting.jl` Pluto notebook.
+  Closes [#17](https://github.com/s-celles/Giac.jl/issues/17).
+  (066-build-function)
+
 ## [0.12.0] - 2026-05-01
 
 ### Added

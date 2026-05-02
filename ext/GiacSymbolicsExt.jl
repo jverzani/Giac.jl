@@ -410,4 +410,57 @@ end
 # Export conversion functions
 export to_giac, to_symbolics
 
+# ============================================================================
+# build_function — Symbolics backend (Tier 3, 067-build-function-tier3)
+# ============================================================================
+#
+# When this extension is loaded, override the internal hook
+# Giac._build_function_symbolics_impl so that `Giac.build_function(expr,
+# vars...; backend = :symbolics)` round-trips through `to_symbolics` and
+# compiles via `Symbolics.build_function`, returning a native Julia callable
+# that is autodiff-friendly and faster in hot loops.
+#
+# Naming caveat: `Symbolics` also exports `build_function`. When both
+# `using Giac` and `using Symbolics` are in scope, the bare name is ambiguous
+# and Julia raises UndefVarError. Users must qualify as
+# `Giac.build_function(...)` (or `Symbolics.build_function(...)`). Documented
+# in the docstring and docs/src/julia_functions.md.
+
+function Giac._build_function_symbolics_impl(expr::Giac.GiacExpr,
+                                              vars::Tuple{Vararg{Giac.GiacExpr}})
+    # Round-trip through Symbolics.
+    sym_expr = Giac.to_symbolics(expr)
+    sym_vars = map(Giac.to_symbolics, vars)
+
+    # Free-symbol check (contract clause B6). Every symbolic variable that
+    # appears in the expression must also appear in the bound vars.
+    expr_vars  = Set(Symbolics.get_variables(sym_expr))
+    bound_vars = Set{Any}()
+    for sv in sym_vars
+        for v in Symbolics.get_variables(sv)
+            push!(bound_vars, v)
+        end
+    end
+    free = setdiff(expr_vars, bound_vars)
+    if !isempty(free)
+        names = join(string.(collect(free)), ", ")
+        throw(ArgumentError(
+            "expression contains free symbol(s) [$names] not bound by the " *
+            "vars argument; either bind them as additional vars or use " *
+            "backend = :giac, which leaves them as a residual GiacExpr."))
+    end
+
+    # Zero-vars constant case: return a 0-arg closure that evaluates the
+    # constant once. Avoids version-dependent behavior of
+    # Symbolics.build_function on no-arg input.
+    if isempty(vars)
+        v = Symbolics.value(sym_expr)
+        return () -> v
+    end
+
+    # Generate the compiled callable. expression = Val{false} returns a
+    # RuntimeGeneratedFunction (world-age safe).
+    return Symbolics.build_function(sym_expr, sym_vars...; expression = Val{false})
+end
+
 end # module GiacSymbolicsExt
