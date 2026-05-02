@@ -18,11 +18,28 @@ end
 Base.show(io::IO, b::_BuildFunction{N}) where {N} =
     print(io, "build_function callable for ", b.expr, " over ", N, " variable(s)")
 
-"""
-    build_function(expr::GiacExpr, vars::GiacExpr...) -> Function
+# Hook for the GiacSymbolicsExt extension. Declared here as a function with
+# no methods; the extension supplies the only method when `using Symbolics`
+# loads. Avoids the precompile-time "method overwriting" error that would
+# occur if a default body lived here and the extension shadowed it.
+function _build_function_symbolics_impl end
 
-Wrap a symbolic `GiacExpr` into a native Julia callable, evaluated at runtime
-through GIAC's substitution and Julia conversion pipeline.
+"""
+    build_function(expr::GiacExpr, vars::GiacExpr...; backend::Symbol = :giac) -> Function
+
+Wrap a symbolic `GiacExpr` into a native Julia callable.
+
+The `backend` keyword selects the evaluation engine:
+- `backend = :giac` (default, always available): each call runs through GIAC's
+  substitution + `to_julia` pipeline. The full behavior is documented below.
+- `backend = :symbolics` (requires `using Symbolics`): the expression is
+  round-tripped through `Giac.to_symbolics` and compiled into a native Julia
+  function via `Symbolics.build_function`. Faster in hot loops and compatible
+  with `ForwardDiff` / SciML autodiff. See the "Backends" section below for
+  trade-offs and edge cases that differ from `:giac`.
+
+The default `:giac` backend is documented in detail in this docstring; the
+`:symbolics` backend is documented in `docs/src/julia_functions.md`.
 
 The returned callable `f` satisfies the equivalence
 
@@ -104,11 +121,66 @@ grow new keyword arguments for every variant.
 - **Argument-count mismatch.** Calling the returned callable with the wrong
   number of positional arguments raises `MethodError` via Julia dispatch.
 
+# Backend `:symbolics`
+
+When `using Symbolics` is in scope, `backend = :symbolics` round-trips the
+expression through [`to_symbolics`](@ref) and compiles it via
+`Symbolics.build_function`. The returned callable is plain Julia code, so it
+runs much faster in hot loops and composes with `ForwardDiff`, SciML solvers,
+and other autodiff-aware consumers that the default `:giac` backend cannot.
+
+```julia
+using Giac, Symbolics
+
+@giac_var x
+f = Giac.build_function(x^3 - 2x + 1, x; backend = :symbolics)
+f(2.0)   # 5.0
+```
+
+Trade-offs:
+- Restricted to expressions whose heads `to_symbolics` can translate. An
+  unsupported head raises an error at `build_function` time naming the head.
+- Free symbols in `expr` that are not in `vars` raise an `ArgumentError` at
+  build time (the `:giac` backend, by contrast, returns a residual `GiacExpr`).
+- Argument-count mismatch on the returned callable raises `BoundsError` for
+  too-few args and silently ignores extra args (Symbolics' `RuntimeGeneratedFunction`
+  semantics; differs from `:giac`'s `MethodError`).
+- Without `using Symbolics`, `backend = :symbolics` raises an `ArgumentError`
+  pointing the user to install Symbolics or use the default `:giac` backend.
+
+**Naming caveat**: `Symbolics` also exports `build_function`. With both
+`using Giac` and `using Symbolics` in scope, the bare name is ambiguous —
+write `Giac.build_function(...)` (or `Symbolics.build_function(...)` for
+the Symbolics-specific call sites).
+
+See `docs/src/julia_functions.md` for the full backend comparison and a
+runtime benchmark.
+
 # See also
 - [`substitute`](@ref) — the underlying simultaneous-substitution primitive.
 - [`to_julia`](@ref) — the Giac-to-Julia value converter (with auto-`evalf`).
+- [`to_symbolics`](@ref) — the bridge used by the `:symbolics` backend.
 - [`@giac_var`](@ref) — declare symbolic variables.
-- `Symbolics.build_function` — the SciML analogue this function is named after.
+- `Symbolics.build_function` — the engine the `:symbolics` backend delegates to.
 - `SymPy.lambdify` — the SymPy.jl analogue for users coming from SymPy.
 """
-build_function(expr::GiacExpr, vars::GiacExpr...) = _BuildFunction(expr, vars)
+function build_function(expr::GiacExpr, vars::GiacExpr...; backend::Symbol = :giac)
+    if backend === :giac
+        return _BuildFunction(expr, vars)
+    elseif backend === :symbolics
+        # If GiacSymbolicsExt hasn't loaded, no method is defined and we
+        # surface a clear error pointing at Symbolics. Otherwise dispatch
+        # to the extension's method.
+        if hasmethod(_build_function_symbolics_impl,
+                     Tuple{GiacExpr, Tuple{Vararg{GiacExpr}}})
+            return _build_function_symbolics_impl(expr, vars)
+        end
+        throw(ArgumentError(
+            "backend = :symbolics requires `using Symbolics`; install with " *
+            "Pkg.add(\"Symbolics\") and `using Symbolics` before calling " *
+            "build_function. Or use the default backend = :giac."))
+    else
+        throw(ArgumentError(
+            "unknown backend $backend; expected :giac or :symbolics"))
+    end
+end
