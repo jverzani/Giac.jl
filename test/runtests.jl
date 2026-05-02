@@ -67,6 +67,9 @@ using LinearAlgebra
     # Substitute function tests (028-substitute-mechanism)
     include("test_substitute.jl")
 
+    # build_function tests (066-build-function)
+    include("test_build_function.jl")
+
     # Output handling tests (029-output-handling)
     include("test_output_handling.jl")
 

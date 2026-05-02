@@ -1,6 +1,6 @@
 # Creating Julia Functions from Expressions
 
-Giac.jl lets you build symbolic expressions and then wrap them into regular Julia functions using [`substitute`](@ref) and [`to_julia`](@ref).
+Giac.jl lets you build symbolic expressions and then wrap them into regular Julia functions. The recommended named entry point is [`build_function`](@ref); under the hood it composes [`substitute`](@ref) and [`to_julia`](@ref), and you can always drop down to those primitives directly.
 
 ## Basic Idea
 
@@ -18,6 +18,44 @@ f(_x) = to_julia(substitute(expr, x => _x))
 f(3)   # 8
 f(0)   # -1
 f(-2)  # 3
+```
+
+## Using `build_function`
+
+`build_function(expr, vars...)` is the named convenience wrapper for exactly the pattern above. It returns a Julia callable that you can pass to `Plots.plot`, `Plots.surface`, broadcasting (`f.(xs)`), and matrix comprehensions — without writing the `substitute` + `to_julia` line every time.
+
+```julia
+using Giac
+
+@giac_var x
+f = build_function(x^2 - 1, x)
+
+f(3)            # 8
+f.([0, 1, 2])   # [-1, 0, 3]
+```
+
+For multivariate expressions, list the variables in the desired positional order:
+
+```julia
+@giac_var x y
+g = build_function(x^2 + 2*x*y - y^2, x, y)
+
+g(1, 2)  # 1
+g(3, 1)  # 14
+```
+
+`build_function` is intentionally a *thin* wrapper. It does not introduce any new substitution mechanism: the result of `build_function(expr, vars...)(vals...)` is always equal to `to_julia(substitute(expr, Pair.(vars, vals)...))`. If you need to insert a transformation between substitution and conversion (e.g., `simplify`, `expand`, `evalf` at custom precision), drop down to the primitives directly rather than expecting `build_function` to grow new keyword arguments for every variant.
+
+### Comparison with SymPy and Symbolics.jl
+
+| Library | Function | Signature | Returns | Notes |
+|---|---|---|---|---|
+| **Giac.jl** | `build_function` | `build_function(expr::GiacExpr, vars::GiacExpr...)` | Julia callable (`<: Function`) | Tier 1 wrapper over `substitute` + `to_julia`; each call goes through the Giac FFI. |
+| **Symbolics.jl** | `build_function` | `build_function(expr, args...; kwargs...)` | Julia function (in-house codegen) | Walks the expression tree and emits native Julia code. SciML standard. |
+| **SymPy.jl** | `lambdify` | `lambdify(expr, vars; fns=...)` | Julia function | Translates a SymPy expression into a Julia function via a Python intermediary. |
+
+```@docs
+build_function
 ```
 
 ## Step by Step
@@ -211,7 +249,8 @@ Each call to `f(_x)` goes through the Giac engine (substitution + evaluation). F
 
 | Pattern | Returns | Use case |
 |---------|---------|----------|
-| `f(_x) = to_julia(substitute(expr, x => _x))` | Native Julia type | Numerical evaluation |
+| `f = build_function(expr, x)` | Native Julia type | Recommended named entry point for plotting / broadcasting |
+| `f(_x) = to_julia(substitute(expr, x => _x))` | Native Julia type | Manual form; use when you need a custom step between substitution and conversion |
 | `f(_x) = substitute(expr, x => _x)` | `GiacExpr` | Further symbolic work |
 | `f(_x, _y) = to_julia(substitute(expr, Dict(x => _x, y => _y)))` | Native Julia type | Multivariate evaluation |
 | `giac_eval("f(x) := ...")` then `giac_eval("f(5)")` | `GiacExpr` | Giac-native function |

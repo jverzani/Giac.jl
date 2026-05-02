@@ -75,6 +75,7 @@ include("operators.jl")
 include("macros.jl")
 include("tables.jl")
 include("substitute.jl")
+include("build_function.jl")
 
 # GenTypes module - Scoped enum for GIAC types (041-scoped-type-enum)
 include("gen_types.jl")
@@ -122,6 +123,9 @@ export commands_table, clear_commands_cache!, CommandsTable
 
 # Substitute function (028-substitute-mechanism)
 export substitute
+
+# Build function (066-build-function)
+export build_function
 
 # Type introspection (029-output-handling, 041-scoped-type-enum)
 # Legacy GIAC_* constants removed - use Giac.GenTypes: T, INT, DOUBLE, etc.
