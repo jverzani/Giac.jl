@@ -95,7 +95,16 @@ function _convert_by_type(g::GiacExpr, t::T)
         # is what callers asking "give me a Julia value" almost always want
         # (Issue #3). Otherwise return the GiacExpr unchanged.
         if is_constant(g)
-            return to_julia(Commands.evalf(g))
+            ev = Commands.evalf(g)
+            # GIAC's `infinity` and `undef` atoms are constant-by-no-free-
+            # symbols but cannot be reduced numerically: `evalf` is a no-op
+            # on them (see issue #19). Detect the fixed point cheaply by
+            # pointer identity first, then fall back to string comparison
+            # for equivalent expressions that do not share the same pointer,
+            # and return the GiacExpr unchanged to avoid infinite recursion.
+            ev.ptr == g.ptr && return g
+            string(ev) == string(g) && return g
+            return to_julia(ev)
         end
         return g
     end
