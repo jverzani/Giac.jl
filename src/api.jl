@@ -127,6 +127,8 @@ function Base.iterate(M::GiacMatrix, state=nothing)
 end
 
 Base.length(M::GiacMatrix) = (sz = size(M); sz[1]*sz[2])
+Base.axes(M::GiacMatrix) = Base.OneTo.(size(M))
+Base.IteratorSize(::GiacMatrix) = Base.HasShape{2}()
 
 
 # linear access for GiacMatrix
@@ -142,6 +144,21 @@ end
 
 Base.getindex(M::GiacMatrix, i::Int) = M[Base.CartesianIndices(M)[i]]
 Base.getindex(M::GiacMatrix, I::CartesianIndex) = M[I.I...]
+
+# broadcast over a matrix
+function Base.Broadcast.broadcastable(M::GiacMatrix)
+    i1, i2 = axes(M)
+    [M[i,j] for i in i1, j in i2]
+end
+
+Base.map(f, M::GiacMatrix)::GiacMatrix = GiacMatrix(invoke_cmd(:apply, f, M))
+
+function Base.adjoint(M::GiacMatrix)
+    return transpose(map(conj, M))
+    i1, i2 = axes(M)
+    data = [conj(M[i,j]) for i in i1, j in i2]
+    transpose(GiacMatrix(data))
+end
 
 
 

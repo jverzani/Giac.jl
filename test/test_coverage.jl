@@ -74,6 +74,22 @@
         # Range indexing on non-vector
         @test_throws ErrorException x[1:2]
     end
+
+    @testset "broadcast over collections" begin
+        λ(x) = x + 1
+        x = giac_eval("42")
+        @test_broken λ.(x) == 43
+
+        x = [42, 44, 21]
+        lst = giac_eval("$(repr(x))")
+        @test λ.(lst) == GiacExpr[(x .+ 1)...]
+        @test lst .* lst' == x .* x'
+
+        N = [1 2; 3 4]
+        M = GiacMatrix(N)
+        @test sin.(M) == collect(GiacExpr, map(sin, M))
+        @test M .* M' == N .* N'
+    end
 end
 
 # ============================================================================

@@ -142,6 +142,19 @@ function Base.iterate(g::GiacExpr, state)
     return (_vector_element(g, state), state + 1)
 end
 
+### broadcasting
+### still errors on sin.(giac_eval("2"))
+### BroadcastStyle depends on type, but this resolves on
+### underlying Giac type and subtype
+function Base.Broadcast.broadcastable(ex::GiacExpr)
+    if is_vector(ex)
+        stype = subtype(ex)
+        stype == 0 && return map(identity, ex)
+        stype == 11 && return permutedims(map(identity, Commands.mat2list(ex)))
+    end
+    ex
+end
+
 """
     Base.eltype(::Type{GiacExpr})
 
