@@ -27,13 +27,29 @@ function Base.length(g::GiacExpr)::Int
 end
 
 """
-    Base.size(g::GiacExpr) -> Tuple{Int}
+    Base.size(g::GiacExpr) -> NTuple{<:Any, Int}
 
 Return the size of a GiacExpr as a tuple.
-For vectors, returns `(length,)`. For scalars, returns `(1,)`.
+For vectors, returns `(length,)`. For scalars, returns `(1,)`, for matrices, return value of `dim`.
 """
-function Base.size(g::GiacExpr)::Tuple{Int}
+function Base.size(g::GiacExpr)::NTuple{<:Any, Int}
+    if is_vector(g) && subtype(g) == 11
+        sz = invoke_cmd(:dim, g)
+        return tuple((to_julia(d) for d in sz)...)
+    end
     return (length(g),)
+end
+
+function Base.transpose(g::GiacExpr)
+    # adjust shape: vectors as a column vector is not GiacStyle
+    if is_vector(g)
+        out = invoke_cmd(:transpose, g)
+        if subtype(g) == 0 # plain vector, do twice to lift to 1×n matrix
+            out = invoke_cmd(:transpose, out)
+        end
+        return out
+    end
+    return g
 end
 
 # ============================================================================
@@ -144,16 +160,26 @@ end
 
 ### broadcasting
 ### still errors on sin.(giac_eval("2"))
-### BroadcastStyle depends on type, but this resolves on
-### underlying Giac type and subtype
+### BroadcastStyle (ndims) depends on type, but this resolves on
+### underlying Giac type, subtype, and size
 function Base.Broadcast.broadcastable(ex::GiacExpr)
-    if is_vector(ex)
-        stype = subtype(ex)
-        stype == 0 && return map(identity, ex)
-        stype == 11 && return permutedims(map(identity, Commands.mat2list(ex)))
+    !is_vector(ex) && return ex
+    subtype(ex) == 0 && return map(identity, ex)
+
+    # Collect object into a Matrix{GiacExpr}
+    sz = size(ex)
+    m,n = sz
+    M = Matrix{GiacExpr}(undef, m, n)
+    for i in 1:m
+        r = invoke_cmd(:row, ex, i-1) # 0-based
+        for j in 1:n
+            M[i,j] = r[j]
+        end
     end
-    ex
+    return M
 end
+Base.IteratorSize(v::GiacExpr) = Base.HasShape{length(invoke_cmd(:dim,v))}()
+Base.axes(lst::GiacExpr) = map(Base.OneTo, size(lst))
 
 """
     Base.eltype(::Type{GiacExpr})
