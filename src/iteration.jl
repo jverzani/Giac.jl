@@ -164,7 +164,19 @@ end
 ### underlying Giac type, subtype, and size
 function Base.Broadcast.broadcastable(ex::GiacExpr)
     !is_vector(ex) && return ex
-    subtype(ex) == 0 && return map(identity, ex)
+    isempty(ex) && return ex
+    if subtype(ex) == 0
+        r1 = first(ex)
+        !is_vector(r1) && return map(identity, ex)
+        n = length(ex)
+        v1 = map(identity, r1)
+        v = Vector{typeof(v1)}(undef, n)
+        v[1] = v1
+        for i in 2:n
+            v[i] = map(identity,ex[i])
+        end
+        return v
+    end
 
     # Collect object into a Matrix{GiacExpr}
     sz = size(ex)
@@ -178,7 +190,7 @@ function Base.Broadcast.broadcastable(ex::GiacExpr)
     end
     return M
 end
-Base.IteratorSize(v::GiacExpr) = Base.HasShape{length(invoke_cmd(:dim,v))}()
+Base.IteratorSize(v::GiacExpr) = Base.HasShape{length(size(v))}()
 Base.axes(lst::GiacExpr) = map(Base.OneTo, size(lst))
 
 """

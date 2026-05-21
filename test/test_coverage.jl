@@ -76,19 +76,72 @@
     end
 
     @testset "broadcast over collections" begin
+
         λ(x) = x + 1
+
+        # broadcasting scalars:
         x = giac_eval("42")
         @test_broken λ.(x) == 43
 
+        # is_vector
         x = [42, 44, 21]
         lst = giac_eval("$(repr(x))")
         @test λ.(lst) == GiacExpr[(x .+ 1)...]
+        @test lst .* lst == x .* x
         @test lst .* lst' == x .* x'
+        @test lst .* lst'' != lst .* lst
+        @test lst .* lst'' == hcat(lst .* lst) # lst'' is a matrix, not vector
+        @test lst .* lst'' == lst .* lst''''   # lst'' == lst'''
 
+        # same as map
+        u = giac_eval("[1,2,3]")
+        @test map(first, u) == first.(u)
+        @test map(+, u, u) == u .+ u
+
+        # vector of vectors
+        u = giac_eval("[[1,2],[3,4]]")
+        @test map(first, u) == first.(u)
+
+        # GiacMatrix
         N = [1 2; 3 4]
         M = GiacMatrix(N)
         @test sin.(M) == collect(GiacExpr, map(sin, M))
         @test M .* M' == N .* N'
+        @test Base.Broadcast.broadcast(+, GiacMatrix([1 0; 0 1]), giac_eval("[1, 4]")) == [2 1; 4 5]
+        @test Base.Broadcast.broadcast(+, GiacMatrix([1  0]), giac_eval("[1, 4]")) == [2 1; 5 4]
+        @test Base.Broadcast.broadcast(+, GiacMatrix([1 0]), 2) == [3 2]
+
+        # lots of splatting --- fails (scalar)
+        let x = giac_eval("[[1, 4], [2, 5], [3, 6]]")
+            @test_broken .+(x..., .*(x..., x...)..., x[1]..., x[2]..., x[3]...) == [14463, 14472]
+        end
+
+        # over nested scalar operations
+        a = zeros(GiacExpr, 2)
+        a .= 1 .// (1 + 2)
+        @test a == [1//3, 1//3]
+        a .= 1 .// (1 .+ 3)
+        @test a == [1//4, 1//4]
+    end
+
+    @testset "broadcastable" begin
+        @giac_var x
+        @test Base.Broadcast.broadcastable(x) == x
+
+        x = [1,2,3]
+        u = giac_eval("$(repr(x))")
+        @test Base.Broadcast.broadcastable(u) == x
+
+        x = [[1,2], [3,4], [5,6]]
+        u = giac_eval("$(repr(x))")
+        @test Base.Broadcast.broadcastable(u) == x
+
+        u = giac_eval("matrix($(repr(x)))")
+        @test Base.Broadcast.broadcastable(u) == mapreduce(permutedims, vcat,x)
+
+        x = [1 2; 3 4]
+        u = GiacMatrix(x)
+        @test Base.Broadcast.broadcastable(u) == x
     end
 end
 
