@@ -126,7 +126,7 @@
 
     @testset "broadcastable" begin
         @giac_var x
-        @test Base.Broadcast.broadcastable(x) == x
+        @test Base.Broadcast.broadcastable(x)[] == x
 
         x = [1,2,3]
         u = giac_eval("$(repr(x))")
