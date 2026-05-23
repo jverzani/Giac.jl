@@ -81,7 +81,7 @@
 
         # broadcasting scalars:
         x = giac_eval("42")
-        @test_broken λ.(x) == 43
+        @test λ.(x) == 43
 
         # is_vector
         x = [42, 44, 21]
@@ -111,9 +111,9 @@
         @test Base.Broadcast.broadcast(+, GiacMatrix([1  0]), giac_eval("[1, 4]")) == [2 1; 5 4]
         @test Base.Broadcast.broadcast(+, GiacMatrix([1 0]), 2) == [3 2]
 
-        # lots of splatting --- fails (scalar)
+        # lots of splatting
         let x = giac_eval("[[1, 4], [2, 5], [3, 6]]")
-            @test_broken .+(x..., .*(x..., x...)..., x[1]..., x[2]..., x[3]...) == [14463, 14472]
+            @test .+(x..., .*(x..., x...)..., x[1]..., x[2]..., x[3]...) == [14463, 14472]
         end
 
         # over nested scalar operations

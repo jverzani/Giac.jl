@@ -163,7 +163,7 @@ end
 ### BroadcastStyle (ndims) depends on type, but this resolves on
 ### underlying Giac type, subtype, and size
 function Base.Broadcast.broadcastable(ex::GiacExpr)
-    !is_vector(ex) && return ex
+    !is_vector(ex) && return Ref(ex)
     isempty(ex) && return ex
     if subtype(ex) == 0
         r1 = first(ex)
