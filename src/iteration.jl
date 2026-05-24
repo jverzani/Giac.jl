@@ -32,7 +32,13 @@ end
 Return the size of a GiacExpr as a tuple.
 For vectors, returns `(length,)`. For scalars, returns `(1,)`.
 """
-function Base.size(g::GiacExpr)::Tuple{Int}
+function Base.size(g::GiacExpr)::NTuple{<:Any, GiacExpr}
+    if is_vector(g) && subtype(g) == 11
+        m = _vector_length(g)
+        m == 0 && return (0,)
+        n = length(_vector_element(g, 1))
+        return (m,n)
+    end
     return (length(g),)
 end
 
@@ -62,12 +68,20 @@ function Base.getindex(g::GiacExpr, i::Int)::GiacExpr
         throw(ErrorException("Gen is not a vector/list"))
     end
 
-    n = length(g)
-    if i < 1 || i > n
-        throw(BoundsError(g, i))
-    end
+    if subtype(g) == 11 # a matrix, not just a vector
+        m = length(g)
+        m == 0 && throw(BoundsError("attempt to access 0×0 matrix at index [1]"))
+        n = length(Commands.row(g,0))
+        i′,j′ = CartesianIndices((1:m, 1:n))[i].I
+        return _vector_element(Commands.row(g, i′-1), j′)
+    else
+        n = length(g)
+        if i < 1 || i > n
+            throw(BoundsError(g, i))
+        end
 
-    return _vector_element(g, i)
+        return _vector_element(g, i)
+    end
 end
 
 """
@@ -82,14 +96,14 @@ Base.firstindex(g::GiacExpr) = 1
 
 Return the last index (same as `length(g)`).
 """
-Base.lastindex(g::GiacExpr) = length(g)
+Base.lastindex(g::GiacExpr) = convert(Int64, prod(size(g), init=1))
 
 """
     Base.eachindex(g::GiacExpr)
 
 Return an iterator over valid indices.
 """
-Base.eachindex(g::GiacExpr) = 1:length(g)
+Base.eachindex(g::GiacExpr) = Base.OneTo(lastindex(g))
 
 # ============================================================================
 # Iteration Protocol
@@ -99,7 +113,8 @@ Base.eachindex(g::GiacExpr) = 1:length(g)
     Base.iterate(g::GiacExpr)
 
 Begin iteration over a GiacExpr. For vectors, yields elements one by one.
-For scalars, yields the value once.
+For scalars, yields the value once. For matrices yields a matrix in column-major
+order.
 
 # Example
 ```julia
@@ -111,11 +126,19 @@ end
 """
 function Base.iterate(g::GiacExpr)
     if is_vector(g)
-        n = length(g)
+        n = _vector_length(g)
         if n == 0
             return nothing
         end
-        return (_vector_element(g, 1), 2)
+        if subtype(g) == 11 # <-- subtype of VECT for matrix. Not documented!!!
+            r = Commands.row(g, 0)
+            val = _vector_element(r, 1)
+            state = (1, 1, n)
+        else
+            val = _vector_element(g, 1)
+            state = (2, n, 0)
+        end
+        return (val, state)
     else
         # Non-vector: iterate once over the value itself
         return (g, nothing)
@@ -133,14 +156,54 @@ function Base.iterate(g::GiacExpr, state)
         return nothing
     end
 
-    # Vector case
-    n = length(g)
-    if state > n
-        return nothing
-    end
+    if subtype(g) == 11
+        ## matrix case
+        ## iterate down column and then over
+        m,n,N = state
+        if m > N-1
+            m,n = 0,n+1
+            n > N && return nothing
+        end
 
-    return (_vector_element(g, state), state + 1)
+        r = Commands.row(g, m)
+        n > _vector_length(r) && return nothing
+        val = _vector_element(r, n)
+        state = (m+1, n, N)
+
+        return (val, state)
+    else
+        # Vector case
+        i,n,_ = state
+        if i > n
+            return nothing
+        end
+        return (_vector_element(g, i), (i + 1, n, 0))
+    end
 end
+
+function Base.IteratorSize(x::GiacExpr)
+    is_vector(x) && subtype(x) == 11 && return Base.HasShape{2}()
+    is_vector(x) && return Base.HasShape{1}()
+    Base.HasLength()
+end
+
+function Base.axes(x::GiacExpr)
+    if is_vector(x)
+        m = _vector_length(x)
+        if subtype(x) == 11
+            if m == 0
+                return (Base.OneTo(m), Base.OneTo(0))
+            else
+                r = Commands.row(x, 0)
+                return (Base.OneTo(m), Base.OneTo(length(r)))
+            end
+        else
+            return (Base.OneTo(m),)
+        end
+    end
+    return ()
+end
+
 
 """
     Base.eltype(::Type{GiacExpr})
