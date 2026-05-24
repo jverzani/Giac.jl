@@ -20,7 +20,12 @@ length(giac_eval("42"))          # 1
 """
 function Base.length(g::GiacExpr)::Int
     if is_vector(g)
-        return _vector_length(g)
+        l = _vector_length(g)
+        iszero(l) && return l
+        if subtype(g) == 11
+            return l * _vector_length(Commands.row(g, 0))
+        end
+        return l
     else
         return 1
     end
@@ -32,10 +37,10 @@ end
 Return the size of a GiacExpr as a tuple.
 For vectors, returns `(length,)`. For scalars, returns `(1,)`, for matrices, return value of `dim`.
 """
-function Base.size(g::GiacExpr)::NTuple{<:Any, GiacExpr}
+function Base.size(g::GiacExpr)::NTuple{<:Any, Int}
     if is_vector(g) && subtype(g) == 11
         m = _vector_length(g)
-        m == 0 && return (0,)
+        m == 0 && return (0,0)
         n = length(_vector_element(g, 1))
         return (m,n)
     end
@@ -81,9 +86,9 @@ function Base.getindex(g::GiacExpr, i::Int)::GiacExpr
     end
 
     if subtype(g) == 11 # a matrix, not just a vector
-        m = length(g)
+        m = _vector_length(g)
         m == 0 && throw(BoundsError("attempt to access 0×0 matrix at index [1]"))
-        n = length(Commands.row(g,0))
+        n = _vector_length(Commands.row(g,0))
         i′,j′ = CartesianIndices((1:m, 1:n))[i].I
         return _vector_element(Commands.row(g, i′-1), j′)
     else
@@ -108,14 +113,14 @@ Base.firstindex(g::GiacExpr) = 1
 
 Return the last index (same as `length(g)`).
 """
-Base.lastindex(g::GiacExpr) = convert(Int64, prod(size(g), init=1))
+Base.lastindex(g::GiacExpr) = prod(size(g), init=1)
 
 """
     Base.eachindex(g::GiacExpr)
 
 Return an iterator over valid indices.
 """
-Base.eachindex(g::GiacExpr) = Base.OneTo(lastindex(g))
+Base.eachindex(g::GiacExpr) = Base.OneTo(length(g))
 
 # ============================================================================
 # Iteration Protocol
@@ -208,19 +213,10 @@ end
 
 function Base.axes(x::GiacExpr)
     if is_vector(x)
-        m = _vector_length(x)
-        if subtype(x) == 11
-            if m == 0
-                return (Base.OneTo(m), Base.OneTo(0))
-            else
-                r = Commands.row(x, 0)
-                return (Base.OneTo(m), Base.OneTo(length(r)))
-            end
-        else
-            return (Base.OneTo(m),)
-        end
+        return Base.OneTo.(size(x))
+    else
+        return ()
     end
-    return ()
 end
 
 
