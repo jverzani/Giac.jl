@@ -34,6 +34,34 @@
         @test string(collected[3]) == "3"
     end
 
+    @testset "giac_matrix iteration" begin
+        v1 = giac_eval("matrix[[1],[2]]")      # 2×1 matrix
+        v2 = giac_eval("matrix[[1, 2]]")       # 1×2 matrix
+        v3 = giac_eval("matrix[[1, 2],[3,4]]") # 2×2 matrix
+
+        # check for matrix subtype of VECT
+        # where is this valuedocumented?
+        @test is_vector(v1) && Giac.Commands.subtype(v1) == 11
+        @test is_vector(v2) && Giac.Commands.subtype(v2) == 11
+        @test is_vector(v3) && Giac.Commands.subtype(v3) == 11
+
+        @test size(v1) == (2, 1)
+        @test size(v2) == (1, 2)
+        @test size(v3) == (2, 2)
+
+        @test [v1[i] for i in eachindex(v1)] == [v2[i] for i in eachindex(v2)]
+        @test collect(GiacExpr, v1) != collect(GiacExpr, v2)
+
+        @test size(collect(GiacExpr, v1)) == (2,1)
+        @test size(collect(GiacExpr, v2)) == (1,2)
+        @test size(collect(GiacExpr, v3)) == (2,2)
+
+        @test [to_julia(x) for x in v1] == [1;2;;]
+        @test [to_julia(x) for x in v2] == [1 2]
+        @test [to_julia(x) for x in v3] == [1 2; 3 4]
+    end
+
+
     @testset "Scalar in operator" begin
         # in() on a non-vector compares string representations
         x = giac_eval("42")
@@ -134,7 +162,7 @@
 
         x = [[1,2], [3,4], [5,6]]
         u = giac_eval("$(repr(x))")
-        @test Base.Broadcast.broadcastable(u) == x
+        @test to_julia.(Base.Broadcast.broadcastable(u)) == x
 
         u = giac_eval("matrix($(repr(x)))")
         @test Base.Broadcast.broadcastable(u) == mapreduce(permutedims, vcat,x)
