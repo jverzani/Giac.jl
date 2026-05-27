@@ -22,7 +22,7 @@ function Base.length(g::GiacExpr)::Int
     if is_vector(g)
         l = _vector_length(g)
         iszero(l) && return l
-        if subtype(g) == 11
+        if is_vector_matrix(g)
             return l * _vector_length(Commands.row(g, 0))
         end
         return l
@@ -38,7 +38,7 @@ Return the size of a GiacExpr as a tuple.
 For vectors, returns `(length,)`. For scalars, returns `(1,)`, for matrices, return value of `dim`.
 """
 function Base.size(g::GiacExpr)::NTuple{<:Any, Int}
-    if is_vector(g) && subtype(g) == 11
+    if is_vector_matrix(g)
         m = _vector_length(g)
         m == 0 && return (0,0)
         n = length(_vector_element(g, 1))
@@ -85,7 +85,7 @@ function Base.getindex(g::GiacExpr, i::Int)::GiacExpr
         throw(ErrorException("Gen is not a vector/list"))
     end
 
-    if subtype(g) == 11 # a matrix, not just a vector
+    if is_vector_matrix(g)
         m = _vector_length(g)
         m == 0 && throw(BoundsError("attempt to access 0×0 matrix at index [1]"))
         n = _vector_length(Commands.row(g,0))
@@ -147,13 +147,13 @@ function Base.iterate(g::GiacExpr)
         if n == 0
             return nothing
         end
-        if subtype(g) == 11 # <-- subtype of VECT for matrix. Not documented!!!
+        if is_vector_matrix(g)
             r = Commands.row(g, 0)
             val = _vector_element(r, 1)
             state = (1, 1, n)
         else
             val = _vector_element(g, 1)
-            state = (2, n, 0)
+            state = (2, n, 0) # pad to return same type as above
         end
         return (val, state)
     else
@@ -173,7 +173,7 @@ function Base.iterate(g::GiacExpr, state)
         return nothing
     end
 
-    if subtype(g) == 11
+    if is_vector_matrix(g)
         ## matrix case
         ## iterate down column and then over
         m,n,N = state
@@ -197,23 +197,23 @@ function Base.iterate(g::GiacExpr, state)
 end
 
 ### broadcasting
-### still errors on sin.(giac_eval("2"))
-### BroadcastStyle (ndims) depends on type, but this resolves on
-### underlying Giac type, subtype, and size
 function Base.Broadcast.broadcastable(ex::GiacExpr)
-    !is_vector(ex) && return Ref(ex)
-    return collect(GiacExpr, ex)
+    if is_vector(ex)
+        return collect(GiacExpr, ex)
+    else
+        return Ref(ex)
+    end
 end
 
-function Base.IteratorSize(x::GiacExpr)
-    is_vector(x) && subtype(x) == 11 && return Base.HasShape{2}()
-    is_vector(x) && return Base.HasShape{1}()
+function Base.IteratorSize(ex::GiacExpr)
+    is_vector_matrix(ex)  && return Base.HasShape{2}()
+    is_vector(ex) && return Base.HasShape{1}()
     Base.HasLength()
 end
 
-function Base.axes(x::GiacExpr)
-    if is_vector(x)
-        return Base.OneTo.(size(x))
+function Base.axes(ex::GiacExpr)
+    if is_vector(ex)
+        return Base.OneTo.(size(ex))
     else
         return ()
     end
