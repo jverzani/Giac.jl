@@ -73,6 +73,7 @@ include("namespace_commands.jl")
 include("api.jl")
 include("operators.jl")
 include("macros.jl")
+include("decl.jl"); export @syms
 include("tables.jl")
 include("substitute.jl")
 include("build_function.jl")

@@ -403,7 +403,6 @@ macro giac_several_vars(base, dims...)
         push!(varnames, varname)
         push!(exprs, :($(esc(varname)) = giac_eval($(string(varname)))))
     end
-
     # Return tuple of created variables
     result = Expr(:tuple, [esc(v) for v in varnames]...)
     return Expr(:block, exprs..., result)
