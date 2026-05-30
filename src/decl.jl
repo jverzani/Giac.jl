@@ -1,19 +1,23 @@
 # Modified from https://github.com/jverzani/SymPyCore.jl/blob/main/src/decl.jl
 #
+# TODO: settle on name (@giac_var?)
+# copilot suggests allowing variables in ranges, eg. z[1:n], but this
+# is a bit too much work to implement
 """
-    @syms x y::(integer, positive), z[1:4] w(t)
+    @syms x y::(integer, positive), z[1:4] u[1:2]::integer v=>"𝑣" w(t)
 
-Create
+Can create:
 
-* new symbols
-* symbols with a limited set of assumptions. Assumptions on the domain can be real, complex, integer, rational. Assumptions on the values can be negative, nonpositive, nonnegative, positive, finite.
-* named vectors of symbols
-* symbolic functions
+* New symbols, or identifiers.
+* Symbols with a limited set of assumptions. Assumptions on the domain can be real, complex, integer, rational. Assumptions on the values can be negative, nonpositive, nonnegative, positive, finite.
+* Named arrays of symbols, possibly with assumptions on each.
+* Symbolic functions.
+* Renamed symbols, so that `v` refers to `𝑣` in `v=>"𝑣"`.
 
 # Example
 ```jldoctest
-julia> @syms x y::(integer, positive) z[1:3] w(t)
-(x, y, GiacExpr[z₁, z₂, z₃], w(t))
+julia> @syms x y::(integer, positive) z[1:2,-1:1] u[1:2]::positive v=>"𝑣" w(t)
+(x, y, GiacExpr[z₁_₋₁ z₁_₀ z₁_₁; z₂_₋₁ z₂_₀ z₂_₁], GiacExpr[u₁, u₂], 𝑣, w(t))
 
 julia> Giac.Commands.about(x)
 GiacExpr: x
@@ -22,10 +26,15 @@ julia> Giac.Commands.about(y)
 GiacExpr: assume[integer,[line[0,+infinity]],[0]]
 
 julia> z
-3-element Vector{GiacExpr}:
- GiacExpr: z₁
- GiacExpr: z₂
- GiacExpr: z₃
+2×3 Matrix{GiacExpr}:
+ GiacExpr: z₁_₋₁  GiacExpr: z₁_₀  GiacExpr: z₁_₁
+ GiacExpr: z₂_₋₁  GiacExpr: z₂_₀  GiacExpr: z₂_₁
+
+julia> Giac.Commands.about(u[2])
+GiacExpr: assume[[],[line[0,+infinity]],[0]]
+
+julia> v
+GiacExpr: 𝑣
 
 julia> w
 GiacExpr: w(t)
@@ -38,7 +47,7 @@ Originally by @matthieubulte in https://github.com/JuliaPy/SymPy.jl/pull/419
 """
 macro syms(xs...)
     if isempty(xs)
-        throw(ArgumentError("@giac_var requires at least one argument"))
+        throw(ArgumentError("@syms requires at least one argument"))
     end
 
     # If the user separates declaration with commas, the top-level expression is a tuple
@@ -50,6 +59,9 @@ macro syms(xs...)
         _gensyms(xs...)
     end
 end
+
+export @syms
+
 
 function _gensyms(xs...)
     asstokw(a) = Expr(:kw, esc(a), true)
@@ -99,8 +111,8 @@ struct NamedDecl <: VarDecl
 end
 
 struct FunctionDecl <: VarDecl
-    rest::VarDecl
-    ts
+    vars :: Vector{Any}
+    rest :: VarDecl
 end
 
 struct TensorDecl <: VarDecl
@@ -113,16 +125,11 @@ struct AssumptionsDecl <: VarDecl
     rest :: VarDecl
 end
 
-# Transform a Decl struct in an Expression that calls SymPy to declare the corresponding symbol
+# Transform a Decl struct in an Expression that calls Giac to
+# declare the corresponding symbol
 function gendecl(x::VarDecl)
     val = :($(ctor(x))($(name(x, missing)), $(assumptions(x))...))
     :($(esc(sym(x))) = $(genreshape(val, x)))
-end
-
-function gendecl(x::FunctionDecl)
-    nm, vars = x.rest, x.ts
-    rhs = "$(string(nm.sym))(" * join(vars, ",") * ")"
-    return :($(esc(sym(nm))) = $(giac_eval(rhs)))
 end
 
 # Transform an expression in a Decl struct
@@ -139,12 +146,16 @@ function parsedecl(expr)
 
     # @syms x=>"name"
     elseif isa(expr, Expr) && expr.head == :call && expr.args[1] == :(=>)
-        throw(ArgumentError("Unsupported renaming"))
+        length(expr.args) == 3 || parseerror()
+        isa(expr.args[3], String) || parseerror()
+
+        expr, strname = expr.args[2:end]
+        return NamedDecl(strname, parsedecl(expr))
     # @syms x(t)
     elseif isa(expr, Expr) && expr.head == :call && expr.args[1] != :(=>)
         length(expr.args) == 1 && parseerror()
         f, r... =  expr.args
-        return FunctionDecl(parsedecl(f), r)
+        return FunctionDecl(r, parsedecl(f))
 
     # @syms x[1:5, 3:9]
     elseif isa(expr, Expr) && expr.head == :ref
@@ -152,6 +163,7 @@ function parsedecl(expr)
         ranges = map(parserange, expr.args[2:end])
         return TensorDecl(ranges, parsedecl(expr.args[1]))
     else
+        @show expr, isa(expr, Expr) && expr.head == :call && expr.args[1] == :(=>)
         parseerror()
     end
 end
@@ -175,26 +187,33 @@ sym(x::AssumptionsDecl) = sym(x.rest)
 function symbols(x, args...; kwargs...)
     if contains(x, ",")
         nm = [giac_eval(string(xᵢ)) for xᵢ ∈ split(x, ",")]
+        for x ∈ nm
+            _add_assumptions!(x, args)
+        end
     else
         nm = giac_eval(x)
-        Commands.purge(nm)
-        for a in args
-            if a ∈ (:complex, :real, :rational, :integer)
-                Commands.assume(nm, string(a))
-            end
-        end
-        for a in args
-            a == :negative    && Commands.additionally(nm < 0)
-            a == :nonpositive && Commands.additionally(nm <= 0)
-            a == :nonnegative && Commands.additionally(nm >= 0)
-            a == :positive    && Commands.additionally(nm > 0)
-            if a == :finite
-                Commands.additionally("$nm > -infinity")
-                Commands.additionally("$nm < infinity")
-            end
-        end
+        _add_assumptions!(nm, args)
     end
     nm
+end
+
+function _add_assumptions!(x, assumptions)
+    Commands.purge(x)
+    for a in assumptions
+        if a ∈ (:complex, :real, :rational, :integer)
+            Commands.assume(x, string(a))
+        end
+    end
+    for a in assumptions
+        a == :negative    && Commands.additionally(x < 0)
+        a == :nonpositive && Commands.additionally(x <= 0)
+        a == :nonnegative && Commands.additionally(x >= 0)
+        a == :positive    && Commands.additionally(x > 0)
+        if a == :finite
+            Commands.additionally("$x > -infinity")
+            Commands.additionally("$x < infinity")
+        end
+    end
 end
 
 function SymFunction(x, args...;kwargs...)
@@ -217,17 +236,20 @@ assumptions(x::AssumptionsDecl) = x.assumptions
 # Reshape is not used by most nodes, but TensorNodes require the output to be given
 # the shape matching the specification. For instance if @syms x[1:3, 2:6], we should
 # have size(x) = (3, 5)
-function Base.reshape(ex::GiacExpr, dims)
+function _reshape(ex, dims)
     reshape(collect(GiacExpr, ex), dims)
 end
 
 
 genreshape(expr, ::SymDecl) = expr
 genreshape(expr, x::NamedDecl) = genreshape(expr, x.rest)
-genreshape(expr, x::FunctionDecl) = genreshape(expr, x.rest)
+function genreshape(expr, x::FunctionDecl)
+    rhs = string(x.rest.sym) * "(" * join(x.vars, ",") * ")"
+    return :(giac_eval($rhs))
+end
 genreshape(expr, x::TensorDecl) = let
     shape = tuple(length.(x.ranges)...)
-    :(reshape(collect($(expr)), $(shape)))
+    :(_reshape(collect($(expr)), $(shape)))
 end
 genreshape(expr, x::AssumptionsDecl) = genreshape(expr, x.rest)
 
