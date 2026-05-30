@@ -156,7 +156,13 @@ function parsedecl(expr)
     # @syms x::assumptions, where assumption = assumptionkw | (assumptionkw...)
     elseif isa(expr, Expr) && expr.head == :(::)
         symexpr, assumptions = expr.args
-        assumptions = isa(assumptions, Union{Expr,Symbol}) ? [assumptions] : assumptions.args
+        if isa(assumptions, Union{Symbol})
+            assumptions = [assumptions]
+        elseif isa(assumptions, Expr) && assumptions.head == :call
+            assumptions = [assumptions]
+        else
+            assumptions = assumptions.args
+        end
         return AssumptionsDecl(assumptions, parsedecl(symexpr))
 
     # @syms x=>"name"
@@ -178,7 +184,6 @@ function parsedecl(expr)
         ranges = map(parserange, expr.args[2:end])
         return TensorDecl(ranges, parsedecl(expr.args[1]))
     else
-        @show expr, isa(expr, Expr) && expr.head == :call && expr.args[1] == :(=>)
         parseerror()
     end
 end
