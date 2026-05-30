@@ -9,10 +9,19 @@
 Can create:
 
 * New symbols, or identifiers.
-* Symbols with a limited set of assumptions. Assumptions on the domain can be real, complex, integer, rational. Assumptions on the values can be negative, nonpositive, nonnegative, positive, finite.
+* Symbols with a limited set of assumptions.
 * Named arrays of symbols, possibly with assumptions on each.
 * Symbolic functions.
 * Renamed symbols, so that `v` refers to `𝑣` in `v=>"𝑣"`.
+
+## Assumptions
+
+Giac has a flexible ability to add assumptions using `assume` and `additionally`. The use here allows for adding assumptions incrementally through `additionally` where the values may be:
+
+* A specification of the domain for the variable with values `real`, `complex`, `rational`, or `integer`.
+* A specification, by name, of a restricted range with values: `negative`, `nonpositive`, `nonnegative`, `positive`, and `finite`.
+* A specification, by a predicate function, of a restricted range through: `<(𝑥)`, `<=(𝑥)`, `>=(𝑥)`, or `>(𝑥)` for a given value `𝑥`.
+
 
 # Example
 ```jldoctest
@@ -38,6 +47,12 @@ GiacExpr: 𝑣
 
 julia> w
 GiacExpr: w(t)
+
+julia> @syms x::(integer, >(2)); Giac.Commands.about(x)
+GiacExpr: assume[integer,[line[2,+infinity]],[2]]
+
+julia> @syms x::(>(pi)); Giac.Commands.about(x)
+GiacExpr: assume[[],[line[pi,+infinity]],[pi]]
 ```
 
 Note:
@@ -141,7 +156,7 @@ function parsedecl(expr)
     # @syms x::assumptions, where assumption = assumptionkw | (assumptionkw...)
     elseif isa(expr, Expr) && expr.head == :(::)
         symexpr, assumptions = expr.args
-        assumptions = isa(assumptions, Symbol) ? [assumptions] : assumptions.args
+        assumptions = isa(assumptions, Union{Expr,Symbol}) ? [assumptions] : assumptions.args
         return AssumptionsDecl(assumptions, parsedecl(symexpr))
 
     # @syms x=>"name"
@@ -184,6 +199,7 @@ sym(x::AssumptionsDecl) = sym(x.rest)
 # can put assumptions on
 # domain of variable: complex, real, rational, integer
 # values of variable: negative, nonpositive, nonnegative, positive, finite
+# predicates of the form `<(𝑥)`, `<=(𝑥)`, `>=(𝑥)`, or `>(𝑥)`
 function symbols(x, args...; kwargs...)
     if contains(x, ",")
         nm = [giac_eval(string(xᵢ)) for xᵢ ∈ split(x, ",")]
@@ -213,6 +229,15 @@ function _add_assumptions!(x, assumptions)
             Commands.additionally("$x > -infinity")
             Commands.additionally("$x < infinity")
         end
+        # check for >(0) or some such
+        if isa(a, Expr) && a.head == :call && length(a.args) == 2
+            op, val = a.args[1], a.args[2]
+            op == :(<)  && Commands.additionally("$x < $(val)")
+            op == :(<=) && Commands.additionally("$x <= $(val)")
+            op == :(>=) && Commands.additionally("$x >= $(val)")
+            op == :(>)  && Commands.additionally("$x > $(val)")
+        end
+
     end
 end
 
