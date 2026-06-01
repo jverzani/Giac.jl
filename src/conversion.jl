@@ -126,6 +126,11 @@ function unwrap_const(ex::GiacExpr)
     return ex
 end
 
+function Base.AbstractFloat(x::GiacExpr)
+    is_vector(x) && return [float(xᵢ) for xᵢ ∈ x]
+    float(to_julia(x))
+end
+
 # ============================================================================
 # Scalar Conversion Helpers
 # ============================================================================
