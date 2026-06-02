@@ -128,7 +128,9 @@ end
 
 function Base.AbstractFloat(x::GiacExpr)
     is_vector(x) && return [float(xᵢ) for xᵢ ∈ x]
-    float(to_julia(x))
+    is_constant(x) && return float(to_julia(x))
+
+    throw(ArgumentError("Can convert $x to a floating point value"))
 end
 
 # ============================================================================
