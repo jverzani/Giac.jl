@@ -371,7 +371,7 @@ function Base.convert(::Type{Float64}, g::GiacExpr)::Float64
         r = _convert_to_rational(g)
         return Float64(r)
     elseif is_constant(g)
-        float(to_julia(g))
+        Float64(to_julia(g))
     else
         throw(MethodError(convert, (Float64, g)))
     end
