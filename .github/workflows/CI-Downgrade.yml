@@ -1,0 +1,69 @@
+name: CI (downgrade)
+
+# Resolves every dependency to the *lowest* version `[compat]` claims to
+# support, then runs the suite there.
+#
+# This is the complement to CompatHelper, which only ever raises ceilings.
+# Nothing else in CI tests the floors: the main matrix always resolves to the
+# newest compatible versions, so a lower bound can be wrong for years without
+# anyone noticing. Two were wrong when this job was written — `GIAC_jll = "2"`
+# (unsatisfiable: libgiac_julia_jll 0.5 needs >= 2.0.1) and
+# `CxxWrap = "0.16, 0.17"` (unsatisfiable: CxxWrap 0.16 needs
+# libcxxwrap_julia_jll 0.13, this package pins 0.14.9).
+#
+# Julia 1.10 on purpose, not `1`: the floors must be tested against the floor
+# Julia, and some of them do not resolve on newer versions — DataFrames 1.6,
+# for one, is not installable on 1.12.
+#
+# `skip` lists the standard libraries, whose versions are tied to Julia itself
+# and so cannot be downgraded independently.
+
+on:
+  push:
+    branches:
+      - main
+      - 'release-*'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+jobs:
+  downgrade:
+    name: Lowest compatible dependencies - Julia 1.10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+          arch: x64
+      - uses: julia-actions/cache@v2
+      # `mode: deps` scopes this to the hard `[deps]`. Test-only extras are
+      # excluded by construction — they are not dependencies — and so are the
+      # weak dependencies, which is deliberate rather than convenient.
+      #
+      # A weakdep floor is a *pairwise* promise: "this extension works against
+      # Symbolics 7.0". The default `alldeps` mode promotes every weakdep into
+      # one joint floor-resolve, forcing all five to their floors
+      # simultaneously — a combination that is unsatisfiable here and that no
+      # user meets, since you load one extension, not five floor-pinned ones
+      # together.
+      #
+      # `alldeps` with `no_promote` naming the specific offenders would give
+      # stronger coverage, and is the upgrade path once the weakdep floors
+      # have been audited one at a time.
+      #
+      # `skip` still lists the standard libraries: their versions are tied to
+      # Julia itself and cannot be downgraded independently.
+      - uses: julia-actions/julia-downgrade-compat@v2
+        with:
+          mode: deps
+          skip: Libdl,LinearAlgebra,Random,Test
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-runtest@v1
