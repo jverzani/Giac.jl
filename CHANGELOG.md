@@ -38,6 +38,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([JuliaSymbolics/SymbolicUtils.jl#1024](https://github.com/JuliaSymbolics/SymbolicUtils.jl/issues/1024)).
   The caveat is repeated in the extension module's own header comment.
 
+### Fixed
+
+- **`to_julia` on a `STRNG` now returns the characters, not GIAC's printed
+  literal.** `to_julia(giac_eval("\"hello\""))` answered `"\"hello\""` — the
+  source literal, double quotes included — where the documented conversion
+  table promises `STRNG` → `String`. Every caller had to strip the quotes,
+  and stripping is not enough in general: GIAC escapes an embedded quote by
+  doubling it, so `a"b` prints as `"a""b"` and dropping the first and last
+  character leaves `a""b`.
+
+  `_convert_to_string` returned `string(g)`, which is GIAC's *print* form,
+  while the wrapper had exposed the payload directly as `strng_value` all
+  along without the conversion path using it. It now reads the characters
+  from the wrapper, so `to_julia(giac_eval("\"hello\""))` is `"hello"`, an
+  empty GIAC string converts to `""`, and Unicode content survives intact. A
+  `STRNG` holding digits still converts to a `String` — the characters are
+  the value, and `to_julia` does not re-parse them.
+
+  `strng_value` dereferences the payload *without checking the tag* — handed
+  anything else it segfaults the process rather than raising. The helper
+  therefore checks the tag itself, and checks it on the very `Gen` it is about
+  to dereference: `giac_type` would not do, because it re-parses the printed
+  form and reports the type of the result, which is a different `Gen` from the
+  cached one being read. No expression is known where the two disagree, but
+  that is not a gap to leave open in front of a segfault.
+
+  **Behaviour change.** Code that worked around the old output — stripping
+  the first and last character, matching on `"\"...\""`, or comparing against
+  a quoted literal — must drop the workaround. Code that used `string(expr)`
+  to obtain the literal form is unaffected: `string` still prints the GIAC
+  literal, quotes and all.
+
 ## [0.14.2] - 2026-07-24
 
 ### Fixed
