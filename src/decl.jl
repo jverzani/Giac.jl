@@ -1,25 +1,19 @@
 # Modified from https://github.com/jverzani/SymPyCore.jl/blob/main/src/decl.jl
 #
-# TODO:
-# * rename to @giac_var; requires changing syms -> giac-var in this file
-#   and removing giac_var code from `macros.jl`
-# * copilot suggests allowing variables in ranges, eg. z[1:n], but this
-#   is a bit too much work to implement
+# copilot suggests allowing variables in ranges, eg. z[1:n], but this
+# is a bit too much work to implement
 """
-    @syms x y::(integer, positive), z[1:4] u[1:2]::integer v=>"𝑣" w(t)
+    @giac_var x y::(integer, positive), z[1:4] u[1:2]::integer v=>"𝑣" w(t)
 
-Create symbolic variables or function expressions from Julia symbols.
+Can create:
 
-Creates `GiacExpr` variables in the calling scope by internally calling
-`giac_eval` with the stringified expression.
+* New symbols, or identifiers.
+* Symbols with a limited set of assumptions.
+* Named arrays of symbols, possibly with assumptions on each.
+* Symbolic functions.
+* Renamed symbols, so that `v` refers to `𝑣` in `v=>"𝑣"`.
 
-
-# Arguments
-
-- `sym...`: Symbol names to create as simple variables. Symbol names may include assumptions. Symbol names may refer to named arrays of symbols with fixed indicies. Symbol names may be renamed.
-- `func(args...)`: Function syntax to create function expressions of one or more variables
-
-# Assumptions
+## Assumptions
 
 Giac has a flexible ability to add assumptions using `assume` and `additionally`. The use here allows for adding assumptions incrementally through `additionally` where the values may be:
 
@@ -29,99 +23,45 @@ Giac has a flexible ability to add assumptions using `assume` and `additionally`
 
 
 # Example
+```jldoctest
+julia> @giac_var x y::(integer, positive) z[1:2,-1:1] u[1:2]::positive v=>"𝑣" w(t)
+(x, y, GiacExpr[z₁_₋₁ z₁_₀ z₁_₁; z₂_₋₁ z₂_₀ z₂_₁], GiacExpr[u₁, u₂], 𝑣, w(t))
 
-Single variable:
-```julia
-@syms x           # Creates x as a GiacExpr
-string(x)             # "x"
-x isa GiacExpr        # true
+julia> Giac.Commands.about(x)
+GiacExpr: x
+
+julia> Giac.Commands.about(y)
+GiacExpr: assume[integer,[line[0,+infinity]],[0]]
+
+julia> z
+2×3 Matrix{GiacExpr}:
+ GiacExpr: z₁_₋₁  GiacExpr: z₁_₀  GiacExpr: z₁_₁
+ GiacExpr: z₂_₋₁  GiacExpr: z₂_₀  GiacExpr: z₂_₁
+
+julia> Giac.Commands.about(u[2])
+GiacExpr: assume[[],[line[0,+infinity]],[0]]
+
+julia> v
+GiacExpr: 𝑣
+
+julia> w
+GiacExpr: w(t)
+
+julia> @giac_var x::(integer, >(2)); Giac.Commands.about(x)
+GiacExpr: assume[integer,[line[2,+infinity]],[2]]
+
+julia> @giac_var x::(>(pi)); Giac.Commands.about(x)
+GiacExpr: assume[[],[line[pi,+infinity]],[pi]]
 ```
 
-Single variable as array
-```julia
-@syms x[1:5]          # x is GiacExpr[x₁, x₂, x₃, x₄, x₅]
-@syms x[-1:1, -1:1]   # x is GiacExpr[x₋₁_₋₁ x₋₁_₀ x₋₁_₁; x₀_₋₁ x₀_₀ x₀_₁; x₁_₋₁ x₁_₀ x₁_₁]
-```
-
-Single variable with assumptions
-```{julia}
-@syms x::integer
-about(x)              # GiacExpr: assume[integer]
-@syms x::(>(1))
-about(x)              # GiacExpr: assume[[],[line[1,+infinity]],[1]]
-@syms x::(integer, >=(1), <=(9))
-about(x)              # GiacExpr: assume[integer,[line[1,9]],[]]
-```
-
-Multiple variables:
-```julia
-@syms x y z       # Creates x, y, z as GiacExpr variables
-```
-
-Functions:
-```julia
-@syms u(t)        # Creates u as GiacExpr representing "u(t)"
-string(u)             # "u(t)"
-
-# Use with differentiation
-@syms t
-diff(u, t)            # Returns diff(u(t),t)
-
-# Multi-variable function
-@syms u(s, t)
-string(u)             # "u(s,t)"
-```
-
-
-Mixed declarations
-```julia
-@syms x y::(integer, positive) z[1:2,-1:1] u[1:2]::positive v=>"𝑣" w(t)
-about(x)              # x
-about(y)              # GiacExpr: assume[integer,[line[0,+infinity]],[0]]
-z                     # 2×3 Matrix{GiacExpr}:
-                      #  GiacExpr: z₁_₋₁  GiacExpr: z₁_₀  GiacExpr: z₁_₁
-                      #  GiacExpr: z₂_₋₁  GiacExpr: z₂_₀  GiacExpr: z₂_₁
-about(u[2])           # GiacExpr: assume[[],[line[0,+infinity]],[0]]
-v                     # GiacExpr: 𝑣
-w                     # GiacExpr: w(t)
-
-@syms x::(integer, >(2))
-about(x)              # GiacExpr: assume[integer,[line[2,+infinity]],[2]]
-@syms x::(>(pi)
-about(x)              # GiacExpr: assume[[],[line[pi,+infinity]],[pi]]
-```
-
-# Usage
-```julia
-using Giac
-
-@syms x y
-expr = giac_eval("x^2 + y^2")
-result = giac_diff(expr, x)  # 2*x
-
-# For ODEs
-@syms t u(t)
-# u''(t) + u(t) = 0
-
-# Callable syntax for initial conditions (034-callable-giacexpr)
-@syms t u(t) tau U0
-u(0)                    # Returns GiacExpr: "u(0)"
-u(0) ~ 1                # Initial condition: u(0) = 1
-diff(u, t)(0) ~ 0       # Derivative condition: u'(0) = 0
-desolve([tau * diff(u, t) + u ~ U0, u(0) ~ 1], u)
-```
-
-# See also
-- [`giac_eval`](@ref): For evaluating string expressions
-
-# Note
+Note:
 
 Originally by @matthieubulte in https://github.com/JuliaPy/SymPy.jl/pull/419
 
 """
-macro syms(xs...)
+macro giac_var(xs...)
     if isempty(xs)
-        throw(ArgumentError("@syms requires at least one argument"))
+        throw(ArgumentError("@giac_var requires at least one argument"))
     end
 
     # If the user separates declaration with commas, the top-level expression is a tuple
@@ -133,8 +73,6 @@ macro syms(xs...)
         _gensyms(xs...)
     end
 end
-
-export @syms
 
 
 function _gensyms(xs...)
@@ -208,11 +146,11 @@ end
 
 # Transform an expression in a Decl struct
 function parsedecl(expr)
-    # @syms x
+    # @giac_var x
     if isa(expr, Symbol)
         return SymDecl(expr)
 
-    # @syms x::assumptions, where assumption = assumptionkw | (assumptionkw...)
+    # @giac_var x::assumptions, where assumption = assumptionkw | (assumptionkw...)
     elseif isa(expr, Expr) && expr.head == :(::)
         symexpr, assumptions = expr.args
         if isa(assumptions, Union{Symbol})
@@ -224,17 +162,16 @@ function parsedecl(expr)
         end
         return AssumptionsDecl(assumptions, parsedecl(symexpr))
 
-    # @syms x=>"name"
+    # @giac_var x=>"name"
     elseif isa(expr, Expr) && expr.head == :call && expr.args[1] == :(=>)
         length(expr.args) == 3 || parseerror()
         isa(expr.args[3], String) || parseerror()
 
         expr, strname = expr.args[2:end]
         return NamedDecl(strname, parsedecl(expr))
-    # @syms x(t)
+    # @giac_var x(t)
     elseif isa(expr, Expr) && expr.head == :call && expr.args[1] != :(=>)
         length(expr.args) == 1 && parseerror()
-
         funcname, funcargs... =  expr.args
         # Validate function name is a symbol
         if !(funcname isa Symbol)
@@ -243,7 +180,7 @@ function parsedecl(expr)
 
         # Validate at least one argument
         if isempty(funcargs)
-            throw(ArgumentError("Function syntax requires at least one argument: @syms $(funcname)() is invalid. Use @syms $funcname for a simple variable."))
+            throw(ArgumentError("Function syntax requires at least one argument: @giac_var $(funcname)() is invalid. Use @giac_var $funcname for a simple variable."))
         end
 
         # Validate all arguments are symbols
@@ -254,17 +191,16 @@ function parsedecl(expr)
         end
         return FunctionDecl(funcargs, parsedecl(funcname))
 
-    # @syms x[1:5, 3:9]
+        # @giac_var x[1:5, 3:9]
     elseif isa(expr, Expr) && expr.head == :ref
         length(expr.args) > 1 || parseerror()
         ranges = map(parserange, expr.args[2:end])
         return TensorDecl(ranges, parsedecl(expr.args[1]))
-    elseif expr isa String
-            throw(ArgumentError("@syms arguments must be symbols, not strings. Use giac_eval(\"$expr\") instead."))
     else
         parseerror()
     end
 end
+
 function parserange(expr)
     range = eval(expr)
     isa(range, AbstractRange) || parseerror()
@@ -341,7 +277,7 @@ assumptions(x::TensorDecl) = assumptions(x.rest)
 assumptions(x::AssumptionsDecl) = x.assumptions
 
 # Reshape is not used by most nodes, but TensorNodes require the output to be given
-# the shape matching the specification. For instance if @syms x[1:3, 2:6], we should
+# the shape matching the specification. For instance if @giac_var x[1:3, 2:6], we should
 # have size(x) = (3, 5)
 function _reshape(ex, dims)
     reshape(collect(GiacExpr, ex), dims)
@@ -380,5 +316,5 @@ name(x::TensorDecl, parentname) = let
 end
 
 function parseerror()
-    error("Incorrect @syms syntax. Try `@syms x::(real,positive) y(t) z::complex n::integer` for instance.")
+    throw(ArgumentError("Incorrect @giac_var syntax. Try `@giac_var x::(real,positive) y(t) z::complex n::integer` for instance."))
 end
